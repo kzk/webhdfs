@@ -21,5 +21,34 @@ class FileUtilsTest < Test::Unit::TestCase
     #WebHDFS::FileUtils.rmr('foo2', :verbose => true)
   end
 
-  def 
+  def test_chmod
+    WebHDFS::FileUtils.mkdir('foo', :mode => 0777, :verbose => true)
+    WebHDFS::FileUtils.chmod(0755, 'foo', :verbose => true)
+    WebHDFS::FileUtils.chmod(0777, 'foo', :verbose => true)
+    WebHDFS::FileUtils.rm('foo', :verbose => true)
+  end
+
+  def test_chown
+    #WebHDFS::FileUtils.mkdir('foo', :mode => 0777, :verbose => true)
+    #WebHDFS::FileUtils.chown('webuser', 'supergroup', 'foo', :verbose => true)
+    #WebHDFS::FileUtils.rm('foo', :verbose => true)
+  end
+
+  def test_set_repl_factor
+    WebHDFS::FileUtils.mkdir('foo', :mode => 0777, :verbose => true)
+    WebHDFS::FileUtils.set_repl_factor('foo', 5)
+    WebHDFS::FileUtils.rm('foo', :verbose => true)
+  end
+
+  def test_set_atime
+    #WebHDFS::FileUtils.mkdir('foo', :mode => 0777, :verbose => true)
+    #WebHDFS::FileUtils.set_atime('foo', Time.now)
+    #WebHDFS::FileUtils.rm('foo', :verbose => true)
+  end
+
+  def test_set_mtime
+    #WebHDFS::FileUtils.mkdir('foo', :mode => 0777, :verbose => true)
+    #WebHDFS::FileUtils.set_mtime('foo', Time.now)
+    #WebHDFS::FileUtils.rm('foo', :verbose => true)
+  end
 end

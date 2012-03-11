@@ -21,7 +21,9 @@ module WebHDFS
       else
         mode = '0755'
       end
-      list.each { |dir| fu_put(dir, 'MKDIRS', {:permission => mode}) }
+      list.each { |dir|
+        fu_put(dir, 'MKDIRS', {:permission => mode})
+      }
     end
     OPT_TABLE['mkdir'] = [:mode, :verbose]
     module_function :mkdir
@@ -33,7 +35,9 @@ module WebHDFS
       fu_check_options options, OPT_TABLE['rm']
       list = fu_list(list)
       fu_log "rm #{list.join ' '}" if options[:verbose]
-      list.each { |dir| fu_delete(dir, 'DELETE', {:recursive => options[:recursive] || false}) }
+      list.each { |dir|
+        fu_delete(dir, 'DELETE', {:recursive => options[:recursive] || false})
+      }
     end
     OPT_TABLE['rm'] = [:verbose, :recursive]
     module_function :rm
@@ -58,10 +62,61 @@ module WebHDFS
       list = fu_list(list)
       fu_log sprintf('chmod %o %s', mode, list.join(' ')) if options[:verbose]
       mode = ('0%03o' % mode) if mode.is_a? Integer
-      list.each { |dir| fu_put(dir, 'SETOWNER', {:permission => mode}) }
+      list.each { |dir|
+        fu_put(dir, 'SETPERMISSION', {:permission => mode})
+      }
     end
     OPT_TABLE['chmod'] = [:verbose]
     module_function :chmod
+
+    def chown(user, group, list, options={})
+      fu_check_options options, OPT_TABLE['chown']
+      list = fu_list(list)
+      fu_log sprintf('chown %s%s',
+                     [user,group].compact.join(':') + ' ',
+                     list.join(' ')) if options[:verbose]
+      list.each { |dir|
+        fu_put(dir, 'SETOWNER', {:owner => user, :group => group})
+      }
+    end
+    OPT_TABLE['chown'] = [:verbose]
+    module_function :chown
+
+    def set_repl_factor(list, num, options={})
+      fu_check_options options, OPT_TABLE['set_repl_factor']
+      list = fu_list(list)
+      fu_log sprintf('set_repl_factor %s %d',
+                     list.join(' '), num) if options[:verbose]
+      list.each { |dir|
+        fu_put(dir, 'SETREPLICATION', {:replication => num})
+      }
+    end
+    OPT_TABLE['set_repl_factor'] = [:verbose]
+    module_function :set_repl_factor
+
+    def set_atime(list, time, options={})
+      fu_check_options options, OPT_TABLE['set_atime']
+      list = fu_list(list)
+      time = time.to_i
+      fu_log sprintf('set_atime %s %d', list.join(' '), time) if options[:verbose]
+      list.each { |dir|
+        fu_put(dir, 'SETTIMES', {:accesstime => time})
+      }      
+    end
+    OPT_TABLE['set_atime'] = [:verbose]
+    module_function :set_atime
+
+    def set_mtime(list, time, options={})
+      fu_check_options options, OPT_TABLE['set_mtime']
+      list = fu_list(list)
+      time = time.to_i
+      fu_log sprintf('set_mtime %s %d', list.join(' '), time) if options[:verbose]
+      list.each { |dir|
+        fu_put(dir, 'SETTIMES', {:modificationtime => time})
+      }      
+    end
+    OPT_TABLE['set_mtime'] = [:verbose]
+    module_function :set_mtime
 
     ##
     def self.private_module_function(name)
