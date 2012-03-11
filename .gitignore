@@ -1,0 +1,4 @@
+/pkg/
+/coverage/
+/vendor/
+Gemfile.lock
