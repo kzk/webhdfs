@@ -5,12 +5,24 @@ module WebHDFS
     # This hash table holds command options.
     OPT_TABLE = {} # internal use only
 
+    # Those values hold NameNode location
     @fu_host = 'localhost'
     @fu_port = 50070
-    def set_host(host, port)
+
+    # Public: Set hostname and port number of WebHDFS
+    #
+    # host - hostname
+    # port - port
+    #
+    # Examples
+    #
+    #   FileUtils.set_server 'localhost', 50070
+    #
+    def set_server(host, port)
       @fu_host = host
       @fu_port = port
     end
+    module_function :set_server
 
     # Public: Create one or more directories.
     #
