@@ -24,6 +24,61 @@ module WebHDFS
     end
     module_function :set_server
 
+    # Public: Copy local file into HDFS
+    #
+    # file - local file path
+    # path - HDFS file path
+    # options - :overwrite, :blocksize, :replication, :mode, :buffersize, :verbose
+    #
+    # Examples
+    #
+    #   FileUtils.copy_from_local 'local_file', 'remote_file'
+    #
+    def copy_from_local(file, path, options={})
+      fu_check_options options, OPT_TABLE['copy_from_local']
+      fu_log "copy_from_local local=#{file} hdfs=#{path}" if options[:verbose]
+      if mode = options[:mode]
+        mode = ('0%03o' % mode) if mode.is_a? Integer
+      else
+        mode = '0644'
+      end
+      options[:permission] = mode
+      options[:overwrite] ||= true
+      begin
+        fu_put(path, 'CREATE', options)
+      rescue RestClient::TemporaryRedirect => e
+        # must be redirected
+        raise e unless [301, 302, 307].include? e.response.code
+        # must have location
+        location = e.response.headers[:location]
+        raise e if location.nil? or location.empty?
+        # put contents
+        RestClient.put location, File.new(file, 'rb')
+      end
+    end
+    OPT_TABLE['copy_from_local'] = [:overwrite, :blocksize, :replication, :mode, :buffersize, :verbose]
+    module_function :copy_from_local
+
+    # Public: Copy remote HDFS file into local
+    #
+    # path - HDFS file path
+    # file - local file path
+    #
+    # Examples
+    #
+    #   FileUtils.copy_from_local 'remote_file', 'local_file'
+    #
+    def copy_to_local(path, file, options={})
+      fu_check_options options, OPT_TABLE['copy_from_local']
+      fu_log "copy_to_local hdfs=#{path} local=#{file}" if options[:verbose]
+      File.open(file, "wb") do |f|
+        ret = fu_get(path, 'OPEN', options)
+        f.write ret
+      end
+    end
+    OPT_TABLE['copy_to_local'] = [:offset, :length, :buffersize]
+    module_function :copy_to_local
+
     # Public: Create one or more directories.
     #
     # list - directory name, or list of them
@@ -237,29 +292,40 @@ module WebHDFS
     OPT_TABLE['set_mtime'] = [:verbose]
     module_function :set_mtime
 
-    ##
+    # Internal: make functin private
     def self.private_module_function(name)
       module_function name
       private_class_method name
     end
 
+    # Internal: make list
     def fu_list(arg)
       [arg].flatten
     end
     private_module_function :fu_list
 
+    # Internal: HTTP GET
+    def fu_get(path, op, params={}, payload='')
+      url = "http://#{@fu_host}:#{@fu_port}/webhdfs/v1/#{path}"
+      RestClient.get url, :params => params.merge({:op => op})
+    end
+    private_module_function :fu_get
+
+    # Internal: HTTP PUT
     def fu_put(path, op, params={}, payload='')
       url = "http://#{@fu_host}:#{@fu_port}/webhdfs/v1/#{path}"
       RestClient.put url, payload, :params => params.merge({:op => op})
     end
     private_module_function :fu_put
 
+    # Internal: HTTP DELETE
     def fu_delete(path, op, params={})
       url = "http://#{@fu_host}:#{@fu_port}/webhdfs/v1/#{path}"
       RestClient.delete url, :params => params.merge({:op => op})
     end
     private_module_function :fu_delete
 
+    # Internal: Check options Hash
     def fu_check_options(options, optdecl)
       h = options.dup
       optdecl.each do |opt|
@@ -271,6 +337,7 @@ module WebHDFS
 
     @fileutils_output = $stderr
     @fileutils_label  = '[webhdfs]: '
+    # Internal: Logging
     def fu_log(msg)
       @fileutils_output ||= $stderr
       @fileutils_label  ||= ''

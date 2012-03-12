@@ -5,6 +5,11 @@ class FileUtilsTest < Test::Unit::TestCase
     require 'webhdfs'
   end
 
+  def test_copy_from_local
+    WebHDFS::FileUtils.copy_from_local('VERSION', 'VERSION')
+    WebHDFS::FileUtils.copy_to_local('VERSION', 'VERSION2')
+  end
+
   def test_rm
     WebHDFS::FileUtils.mkdir('foo', :mode => 0777, :verbose => true)
     WebHDFS::FileUtils.rm('foo', :verbose => true)
