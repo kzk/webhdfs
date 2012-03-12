@@ -9,6 +9,10 @@ Rake::TestTask.new(:test) do |test|
   test.verbose = true
 end
 
+task :doc do |t|
+  `bundle exec rdoc --markup=tomdoc --visibility=public --include=lib --exclude=test`
+end
+
 task :coverage do |t|
   ENV['SIMPLE_COV'] = '1'
   Rake::Task["test"].invoke

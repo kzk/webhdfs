@@ -18,6 +18,7 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency "rest-client", "~> 1.6.7"
   gem.add_development_dependency "rake", ">= 0.9.2"
+  gem.add_development_dependency "rdoc", ">= 3.12"
   gem.add_development_dependency "simplecov", ">= 0.5.4"
   gem.add_development_dependency "rr", ">= 1.0.0"
 end
