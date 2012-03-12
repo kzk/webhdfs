@@ -6,8 +6,10 @@ class FileUtilsTest < Test::Unit::TestCase
   end
 
   def test_copy_from_local
-    WebHDFS::FileUtils.copy_from_local('VERSION', 'VERSION')
-    WebHDFS::FileUtils.copy_to_local('VERSION', 'VERSION2')
+    WebHDFS::FileUtils.copy_from_local('VERSION', 'VERSION', :verbose => true)
+    WebHDFS::FileUtils.copy_to_local('VERSION', 'VERSION2', :verbose => true)
+    WebHDFS::FileUtils.append('VERSION', 'foo-bar-buzz', :verbose => true)
+    WebHDFS::FileUtils.rm('VERSION', :verbose => true)
   end
 
   def test_rm

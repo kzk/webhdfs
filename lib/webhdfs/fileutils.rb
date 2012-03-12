@@ -63,21 +63,54 @@ module WebHDFS
     #
     # path - HDFS file path
     # file - local file path
+    # options - :offset, :length, :buffersize, :verbose
     #
     # Examples
     #
     #   FileUtils.copy_from_local 'remote_file', 'local_file'
     #
     def copy_to_local(path, file, options={})
-      fu_check_options options, OPT_TABLE['copy_from_local']
+      fu_check_options options, OPT_TABLE['copy_to_local']
       fu_log "copy_to_local hdfs=#{path} local=#{file}" if options[:verbose]
       File.open(file, "wb") do |f|
         ret = fu_get(path, 'OPEN', options)
         f.write ret
       end
     end
-    OPT_TABLE['copy_to_local'] = [:offset, :length, :buffersize]
+    OPT_TABLE['copy_to_local'] = [:offset, :length, :buffersize, :verbose]
     module_function :copy_to_local
+
+    # Public: Append to HDFS file
+    #
+    # path - HDFS file path
+    # body - contents
+    # options - :buffersize, :verbose
+    #
+    # Examples
+    #
+    #   FileUtils.copy_from_local 'local_file', 'remote_file'
+    #
+    def append(path, body, options={})
+      fu_check_options options, OPT_TABLE['append']
+      fu_log "append #{body.bytesize} bytes to #{path}" if options[:verbose]
+      begin
+        fu_post(path, 'APPEND', options)
+      rescue RestClient::TemporaryRedirect => e
+        # must be redirected
+        raise e unless [301, 302, 307].include? e.response.code
+        # must have location
+        location = e.response.headers[:location]
+        raise e if location.nil? or location.empty?
+        # put contents
+        begin
+          RestClient.post location, body
+        rescue => e
+          p e.response
+        end
+      end
+    end
+    OPT_TABLE['append'] = [:buffersize, :verbose]
+    module_function :append
 
     # Public: Create one or more directories.
     #
@@ -317,6 +350,13 @@ module WebHDFS
       RestClient.put url, payload, :params => params.merge({:op => op})
     end
     private_module_function :fu_put
+
+    # Internal: HTTP POST
+    def fu_post(path, op, params={}, payload='')
+      url = "http://#{@fu_host}:#{@fu_port}/webhdfs/v1/#{path}"
+      RestClient.post url, payload, :params => params.merge({:op => op})
+    end
+    private_module_function :fu_post
 
     # Internal: HTTP DELETE
     def fu_delete(path, op, params={})
