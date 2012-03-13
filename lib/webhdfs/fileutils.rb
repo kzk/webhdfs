@@ -102,11 +102,7 @@ module WebHDFS
         location = e.response.headers[:location]
         raise e if location.nil? or location.empty?
         # put contents
-        begin
-          RestClient.post location, body
-        rescue => e
-          p e.response
-        end
+        RestClient.post location, body
       end
     end
     OPT_TABLE['append'] = [:buffersize, :verbose]
