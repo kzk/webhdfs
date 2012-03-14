@@ -67,7 +67,7 @@ module WebHDFS
     #
     # Examples
     #
-    #   FileUtils.copy_from_local 'remote_file', 'local_file'
+    #   FileUtils.copy_to_local 'remote_file', 'local_file'
     #
     def copy_to_local(path, file, options={})
       fu_check_options options, OPT_TABLE['copy_to_local']
@@ -88,7 +88,7 @@ module WebHDFS
     #
     # Examples
     #
-    #   FileUtils.copy_from_local 'local_file', 'remote_file'
+    #   FileUtils.append 'remote_path', 'contents'
     #
     def append(path, body, options={})
       fu_check_options options, OPT_TABLE['append']
