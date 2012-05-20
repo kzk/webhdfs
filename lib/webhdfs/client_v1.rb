@@ -60,6 +60,9 @@ module WebHDFS
     # curl -i -X PUT "<HOST>:<PORT>/webhdfs/v1/<PATH>?op=RENAME&destination=<PATH>"
     def rename(path, dest, options={})
       check_options(options, OPT_TABLE['RENAME'])
+      unless dest.start_with?('/')
+        dest = '/' + dest
+      end
       res = operate_requests('PUT', path, 'RENAME', options.merge({'destination' => dest}))
       check_success_json(res, 'boolean')
     end
