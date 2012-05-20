@@ -167,7 +167,7 @@ module WebHDFS
                        path
                      end
 
-      res = conn.send_request(method, request_path, palyload)
+      res = conn.send_request(method, request_path, payload)
 
       case res
       when Net::HTTPSuccess
