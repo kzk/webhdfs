@@ -175,7 +175,7 @@ module WebHDFS
       when Net::HTTPRedirection
         res
       else
-        message = if res.body
+        message = if res.body and not res.body.empty?
                     res.body.gsub(/\n/, '')
                   else
                     'Response body is empty...'
