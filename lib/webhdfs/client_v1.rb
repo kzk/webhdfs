@@ -132,7 +132,7 @@ module WebHDFS
                {'op' => op}
              end
       query = URI.encode_www_form(params.merge(opts))
-      path + '?' + query
+      api_path(path) + '?' + query
     end
 
     REDIRECTED_OPERATIONS = ['APPEND', 'CREATE', 'OPEN']
@@ -167,7 +167,7 @@ module WebHDFS
                        path
                      end
 
-      p {:host => host, :port => port, :method => method, :path => request_path}
+      p({:host => host, :port => port, :method => method, :path => request_path})
       res = conn.send_request(method, request_path, payload)
 
       case res
