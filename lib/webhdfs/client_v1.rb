@@ -240,7 +240,6 @@ module WebHDFS
                        path
                      end
 
-      p({:host => host, :port => port, :method => method, :path => request_path})
       res = conn.send_request(method, request_path, payload)
 
       case res
