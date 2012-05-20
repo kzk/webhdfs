@@ -51,7 +51,7 @@ module WebHDFS
     # curl -i -X PUT "http://<HOST>:<PORT>/<PATH>?op=MKDIRS[&permission=<OCTAL>]"
     def mkdir(path, options={})
       check_options(options, OPT_TABLE['MKDIRS'])
-      res = operate_requests('MKDIRS', path, 'MKDIRS', options)
+      res = operate_requests('PUT', path, 'MKDIRS', options)
 
       res.code == '200' and res.content_type == 'application/json' and JSON.parse(res.body)['boolean']
     end
