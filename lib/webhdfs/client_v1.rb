@@ -109,7 +109,7 @@ module WebHDFS
     end
 
     def check_options(options, optdecl)
-      ex = options - optdecl
+      ex = options.keys - optdecl
       raise ArgumentError, "no such option: #{ex.keys.join(' ')}" unless ex.empty?
     end
 
