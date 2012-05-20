@@ -8,5 +8,4 @@ module WebHDFS
   class ServerError < StandardError; end
 
   class RequestFailedError < StandardError; end
-  end
 end
