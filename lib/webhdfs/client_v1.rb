@@ -46,7 +46,7 @@ module WebHDFS
       res.body
     end
     OPT_TABLE['OPEN'] = ['offset', 'length', 'buffersize']
-    alias :open, :read
+    alias :open :read
 
     # curl -i -X PUT "http://<HOST>:<PORT>/<PATH>?op=MKDIRS[&permission=<OCTAL>]"
     def mkdir(path, options={})
@@ -56,7 +56,7 @@ module WebHDFS
       res.code == '200' and res.content_type == 'application/json' and JSON.parse(res.body)['boolean']
     end
     OPT_TABLE['MKDIRS'] = ['permission']
-    alias :mkdirs, :mkdir
+    alias :mkdirs :mkdir
 
     def rename(path, dest, options={})
     end
@@ -167,7 +167,7 @@ module WebHDFS
                        path
                      end
 
-      res = conn.send_request(method, path, palyload)
+      res = conn.send_request(method, request_path, palyload)
 
       case res
       when Net::HTTPSuccess
