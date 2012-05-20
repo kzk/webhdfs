@@ -144,7 +144,12 @@ module WebHDFS
           raise WebHDFS::RequestFailedError, msg
         end
         uri = URI.parse(res['location'])
-        request(uri.host, uri.port, method, uri.path, nil, {}, payload)
+        rpath = if uri.query
+                  uri.path + '?' + uri.query
+                else
+                  uri.path
+                end
+        request(uri.host, uri.port, method, rpath, nil, {}, payload)
       else
         request(@host, @port, method, path, op, params, nil)
       end
