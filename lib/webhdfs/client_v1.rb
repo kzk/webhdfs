@@ -175,10 +175,10 @@ module WebHDFS
       when Net::HTTPRedirection
         res
       else
-        message = if res.content_type == 'application/json'
-                    (JSON.parse(res.body)['RemoteException'] || {})['message']
+        message = if res.body
+                    res.body.gsub(/\n/, '')
                   else
-                    res.body
+                    'Response body is empty...'
                   end
         case res.code
         when '400'
