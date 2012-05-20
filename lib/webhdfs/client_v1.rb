@@ -111,7 +111,7 @@ module WebHDFS
     # curl -i "http://<HOST>:<PORT>/webhdfs/v1/?op=GETHOMEDIRECTORY"
     def homedir(options={})
       check_options(options, OPT_TABLE['GETHOMEDIRECTORY'])
-      res = operate_requests('GET', path, 'GETHOMEDIRECTORY', options)
+      res = operate_requests('GET', '/', 'GETHOMEDIRECTORY', options)
       check_success_json(res, 'Path')
     end
     alias :gethomedirectory :homedir
@@ -140,15 +140,17 @@ module WebHDFS
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=SETREPLICATION
     #                           [&replication=<SHORT>]"
-    def replication(path, replnum, option={})
+    def replication(path, replnum, options={})
       check_options(options, OPT_TABLE['SETREPLICATION'])
-      res = operate_requests('PUT', path, 'SETREPLICATION', options.merge({'replication' => replnum}))
+      res = operate_requests('PUT', path, 'SETREPLICATION', options.merge({'replication' => replnum.to_s}))
       check_success_json(res, 'boolean')
     end
     alias :setreplication :replication
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=SETTIMES
     #                           [&modificationtime=<TIME>][&accesstime=<TIME>]"
+    # motidicationtime: radix-10 logn integer
+    # accesstime: radix-10 logn integer
     def touch(path, options={})
       check_options(options, OPT_TABLE['SETTIMES'])
       unless options.has_key?('modificationtime') or options.has_key?('accesstime')
