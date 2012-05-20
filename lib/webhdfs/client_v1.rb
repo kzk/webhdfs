@@ -52,65 +52,128 @@ module WebHDFS
     def mkdir(path, options={})
       check_options(options, OPT_TABLE['MKDIRS'])
       res = operate_requests('PUT', path, 'MKDIRS', options)
-
-      res.code == '200' and res.content_type == 'application/json' and JSON.parse(res.body)['boolean']
+      check_success_json(res, 'boolean')
     end
     OPT_TABLE['MKDIRS'] = ['permission']
     alias :mkdirs :mkdir
 
+    # curl -i -X PUT "<HOST>:<PORT>/webhdfs/v1/<PATH>?op=RENAME&destination=<PATH>"
     def rename(path, dest, options={})
+      check_options(options, OPT_TABLE['RENAME'])
+      res = operate_requests('PUT', path, 'RENAME', options.merge({'destination' => dest}))
+      check_success_json(res, 'boolean')
     end
 
-    def delete(path, options={}) # options['recursive']
+    # curl -i -X DELETE "http://<host>:<port>/webhdfs/v1/<path>?op=DELETE
+    #                          [&recursive=<true|false>]"
+    def delete(path, options={})
+      check_options(options, OPT_TABLE['DELETE'])
+      res = operate_requests('DELETE', path, 'DELETE', options)
+      check_success_json(res, 'boolean')
     end
+    OPT_TABLE['DELETE'] = ['recursive']
 
-    def status(path, options={}) # GETFILESTATUS
+    # curl -i  "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=GETFILESTATUS"
+    def stat(path, options={})
+      check_options(options, OPT_TABLE['GETFILESTATUS'])
+      res = operate_requests('GET', path, 'GETFILESTATUS', options)
+      check_success_json(res, 'FileStatus')
     end
+    alias :getfilestatus :stat
 
-    def list(path, options={}) # LISTSTATUS
+    # curl -i  "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=LISTSTATUS"
+    def list(path, options={})
+      check_options(options, OPT_TABLE['LISTSTATUS'])
+      res = operate_requests('GET', path, 'LISTSTATUS', options)
+      check_success_json(res, 'FileStatuses')['FileStatus']
     end
+    alias :liststatus :list
 
-    def content_summary(path, options={}) # GETCONTENTSUMMARY
-      raise NotImplementedError
+    # curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=GETCONTENTSUMMARY"
+    def content_summary(path, options={})
+      check_options(options, OPT_TABLE['GETCONTENTSUMMARY'])
+      res = operate_requests('GET', path, 'GETCONTENTSUMMARY', options)
+      check_success_json(res, 'ContentSummary')
     end
+    alias :getcontentsummary :content_summary
 
-    def checksum(path, options={}) # GETFILECHECKSUM
-      raise NotImplementedError
+    # curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=GETFILECHECKSUM"
+    def checksum(path, options={})
+      check_options(options, OPT_TABLE['GETFILECHECKSUM'])
+      res = operate_requests('GET', path, 'GETFILECHECKSUM', options)
+      check_success_json(res, 'FileChecksum')
     end
+    alias :getfilechecksum :checksum
 
-    def homedir(options={}) # GETHOMEDIRECTORY
-      raise NotImplementedError
+    # curl -i "http://<HOST>:<PORT>/webhdfs/v1/?op=GETHOMEDIRECTORY"
+    def homedir(options={})
+      check_options(options, OPT_TABLE['GETHOMEDIRECTORY'])
+      res = operate_requests('GET', path, 'GETHOMEDIRECTORY', options)
+      check_success_json(res, 'Path')
     end
+    alias :gethomedirectory :homedir
 
-    def chmod(path, options={}) # SETPERMISSION
-      raise NotImplementedError
+    # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=SETPERMISSION
+    #                 [&permission=<OCTAL>]"
+    def chmod(path, mode, options={})
+      check_options(options, OPT_TABLE['SETPERMISSION'])
+      res = operate_requests('PUT', path, 'SETPERMISSION', options.merge({'permission' => mode}))
+      res.code == '200'
     end
+    alias :setpermission :chmod
 
-    def chown(path, options={}) # SETOWNER
-      raise NotImplementedError
+    # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=SETOWNER
+    #                          [&owner=<USER>][&group=<GROUP>]"
+    def chown(path, options={})
+      check_options(options, OPT_TABLE['SETOWNER'])
+      unless options.has_key?('owner') or options.has_key?('group')
+        raise ArgumentError, "'chown' needs at least one of owner or group"
+      end
+      res = operate_requests('PUT', path, 'SETOWNER', options)
+      res.code == '200'
     end
+    OPT_TABLE['SETOWNER'] = ['owner', 'group']
+    alias :setowner :chown
 
-    def replication(path, option={}) # SETREPLICATION
-      raise NotImplementedError
+    # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=SETREPLICATION
+    #                           [&replication=<SHORT>]"
+    def replication(path, replnum, option={})
+      check_options(options, OPT_TABLE['SETREPLICATION'])
+      res = operate_requests('PUT', path, 'SETREPLICATION', options.merge({'replication' => replnum}))
+      check_success_json(res, 'boolean')
     end
+    alias :setreplication :replication
 
-    def touch(path, options={}) # SETTIMES
-      raise NotImplementedError
+    # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=SETTIMES
+    #                           [&modificationtime=<TIME>][&accesstime=<TIME>]"
+    def touch(path, options={})
+      check_options(options, OPT_TABLE['SETTIMES'])
+      unless options.has_key?('modificationtime') or options.has_key?('accesstime')
+        raise ArgumentError, "'chown' needs at least one of modificationtime or accesstime"
+      end
+      res = operate_requests('PUT', path, 'SETTIMES', options)
+      res.code == '200'
     end
+    OPT_TABLE['SETTIMES'] = ['modificationtime', 'accesstime']
+    alias :settimes :touch
 
-    def delegation_token(user, options={}) # GETDELEGATIONTOKEN
-      raise NotImplementedError
-    end
-    def renew_delegation_token(token, options={}) # RENEWDELEGATIONTOKEN
-      raise NotImplementedError
-    end
-    def cancel_delegation_token(token, options={}) # CANCELDELEGATIONTOKEN
-      raise NotImplementedError
-    end
+    # def delegation_token(user, options={}) # GETDELEGATIONTOKEN
+    #   raise NotImplementedError
+    # end
+    # def renew_delegation_token(token, options={}) # RENEWDELEGATIONTOKEN
+    #   raise NotImplementedError
+    # end
+    # def cancel_delegation_token(token, options={}) # CANCELDELEGATIONTOKEN
+    #   raise NotImplementedError
+    # end
 
-    def check_options(options, optdecl)
+    def check_options(options, optdecl=[])
       ex = options.keys - optdecl
       raise ArgumentError, "no such option: #{ex.keys.join(' ')}" unless ex.empty?
+    end
+
+    def check_success_json(res, attr=nil)
+      res.code == '200' and res.content_type == 'application/json' and (attr.nil? or JSON.parse(res.body)[attr])
     end
 
     def api_path(path)
@@ -135,7 +198,7 @@ module WebHDFS
       api_path(path) + '?' + query
     end
 
-    REDIRECTED_OPERATIONS = ['APPEND', 'CREATE', 'OPEN']
+    REDIRECTED_OPERATIONS = ['APPEND', 'CREATE', 'OPEN', 'GETFILECHECKSUM']
     def operate_requests(method, path, op, params={}, payload=nil)
       if REDIRECTED_OPERATIONS.include?(op)
         res = request(@host, @port, method, path, op, params, nil)
