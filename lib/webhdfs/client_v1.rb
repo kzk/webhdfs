@@ -12,18 +12,24 @@ module WebHDFS
 
     attr_accessor :host, :port, :username, :doas
     attr_accessor :open_timeout, :read_timeout
+    attr_accessor :httpfs_mode
 
     def initialize(host='localhost', port=50070, username=nil, doas=nil)
       @host = host
       @port = port
       @username = username
       @doas = doas
+
+      @httpfs_mode = false
     end
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATE
     #                 [&overwrite=<true|false>][&blocksize=<LONG>][&replication=<SHORT>]
     #                 [&permission=<OCTAL>][&buffersize=<INT>]"
     def create(path, body, options={})
+      if @httpfs_mode
+        options = options.merge({'data' => 'true'})
+      end
       check_options(options, OPT_TABLE['CREATE'])
       res = operate_requests('PUT', path, 'CREATE', options, body)
       res.code == '201'
@@ -32,6 +38,9 @@ module WebHDFS
 
     # curl -i -X POST "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=APPEND[&buffersize=<INT>]"
     def append(path, body, options={})
+      if @httpfs_mode
+        options = options.merge({'data' => 'true'})
+      end
       check_options(options, OPT_TABLE['APPEND'])
       res = operate_requests('POST', path, 'APPEND', options, body)
       res.code == '200'
@@ -205,7 +214,7 @@ module WebHDFS
 
     REDIRECTED_OPERATIONS = ['APPEND', 'CREATE', 'OPEN', 'GETFILECHECKSUM']
     def operate_requests(method, path, op, params={}, payload=nil)
-      if REDIRECTED_OPERATIONS.include?(op)
+      if not @httpfs_mode and REDIRECTED_OPERATIONS.include?(op)
         res = request(@host, @port, method, path, op, params, nil)
         unless res.is_a?(Net::HTTPRedirection) and res['location']
           msg = "NameNode returns non-redirection (or without location header), code:#{res.code}, body:#{res.body}."
@@ -219,7 +228,7 @@ module WebHDFS
                 end
         request(uri.host, uri.port, method, rpath, nil, {}, payload)
       else
-        request(@host, @port, method, path, op, params, nil)
+        request(@host, @port, method, path, op, params, payload)
       end
     end
 
