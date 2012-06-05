@@ -1,28 +1,45 @@
+require_relative 'client'
+
 module WebHDFS
   module FileUtils
-    require 'rest_client'
-
-    # This hash table holds command options.
-    OPT_TABLE = {} # internal use only
-
     # Those values hold NameNode location
     @fu_host = 'localhost'
     @fu_port = 50070
+    @fu_user = nil
+    @fu_doas = nil
+    @fu_httpfs_mode = false
 
     # Public: Set hostname and port number of WebHDFS
     #
     # host - hostname
     # port - port
+    # user - username
+    # doas - proxy user name
     #
     # Examples
     #
     #   FileUtils.set_server 'localhost', 50070
     #
-    def set_server(host, port)
+    def set_server(host, port, user, doas)
       @fu_host = host
       @fu_port = port
+      @fu_user = user
+      @fu_doas = doas
     end
     module_function :set_server
+
+    # Public: Set httpfs mode enable/disable
+    #
+    # mode - boolean (default true)
+    #
+    # Examples
+    #
+    #   FileUtils.set_httpfs_mode
+    #
+    def set_httpfs_mode(mode=true)
+      @fu_httpfs_mode = mode
+    end
+    module_function :set_httpfs_mode
 
     # Public: Copy local file into HDFS
     #
@@ -35,28 +52,18 @@ module WebHDFS
     #   FileUtils.copy_from_local 'local_file', 'remote_file'
     #
     def copy_from_local(file, path, options={})
-      fu_check_options options, OPT_TABLE['copy_from_local']
-      fu_log "copy_from_local local=#{file} hdfs=#{path}" if options[:verbose]
+      opts = options.dup
+      fu_log "copy_from_local local=#{file} hdfs=#{path}" if opts.delete(:verbose)
       if mode = options[:mode]
         mode = ('0%03o' % mode) if mode.is_a? Integer
       else
         mode = '0644'
       end
-      options[:permission] = mode
-      options[:overwrite] ||= true
-      begin
-        fu_put(path, 'CREATE', options)
-      rescue RestClient::TemporaryRedirect => e
-        # must be redirected
-        raise e unless [301, 302, 307].include? e.response.code
-        # must have location
-        location = e.response.headers[:location]
-        raise e if location.nil? or location.empty?
-        # put contents
-        RestClient.put location, File.new(file, 'rb')
-      end
+      opts[:permission] = mode
+      opts[:overwrite] ||= true
+
+      client.create(path, File.new(file, 'rb'), opts)
     end
-    OPT_TABLE['copy_from_local'] = [:overwrite, :blocksize, :replication, :mode, :buffersize, :verbose]
     module_function :copy_from_local
 
     # Public: Copy remote HDFS file into local
@@ -70,14 +77,12 @@ module WebHDFS
     #   FileUtils.copy_to_local 'remote_file', 'local_file'
     #
     def copy_to_local(path, file, options={})
-      fu_check_options options, OPT_TABLE['copy_to_local']
-      fu_log "copy_to_local hdfs=#{path} local=#{file}" if options[:verbose]
+      opts = options.dup
+      fu_log "copy_to_local hdfs=#{path} local=#{file}" if opts.delete(:verbose)
       File.open(file, "wb") do |f|
-        ret = fu_get(path, 'OPEN', options)
-        f.write ret
+        f.write client.read(path, opts)
       end
     end
-    OPT_TABLE['copy_to_local'] = [:offset, :length, :buffersize, :verbose]
     module_function :copy_to_local
 
     # Public: Append to HDFS file
@@ -91,21 +96,10 @@ module WebHDFS
     #   FileUtils.append 'remote_path', 'contents'
     #
     def append(path, body, options={})
-      fu_check_options options, OPT_TABLE['append']
-      fu_log "append #{body.bytesize} bytes to #{path}" if options[:verbose]
-      begin
-        fu_post(path, 'APPEND', options)
-      rescue RestClient::TemporaryRedirect => e
-        # must be redirected
-        raise e unless [301, 302, 307].include? e.response.code
-        # must have location
-        location = e.response.headers[:location]
-        raise e if location.nil? or location.empty?
-        # put contents
-        RestClient.post location, body
-      end
+      opts = options.dup
+      fu_log "append #{body.bytesize} bytes to #{path}" if opts.delete(:verbose)
+      client.append(path, body, opts)
     end
-    OPT_TABLE['append'] = [:buffersize, :verbose]
     module_function :append
 
     # Public: Create one or more directories.
@@ -120,19 +114,19 @@ module WebHDFS
     #   FileUtils.mkdir 'tmp', :mode => 0700
     #
     def mkdir(list, options={})
-      fu_check_options options, OPT_TABLE['mkdir']
-      list = fu_list(list)
-      fu_log "mkdir #{options[:mode] ? ('-m %03o ' % options[:mode]) : ''}#{list.join ' '}" if options[:verbose]
-      if mode = options[:mode]
+      opts = options.dup
+      list = [list].flatten
+      fu_log "mkdir #{options[:mode] ? ('-m %03o ' % options[:mode]) : ''}#{list.join ' '}" if opts.delete(:verbose)
+      if mode = opts[:mode]
         mode = ('0%03o' % mode) if mode.is_a? Integer
       else
         mode = '0755'
       end
+      c = client
       list.each { |dir|
-        fu_put(dir, 'MKDIRS', {:permission => mode})
+        c.mkdir(dir, {:permission => mode})
       }
     end
-    OPT_TABLE['mkdir'] = [:mode, :verbose]
     module_function :mkdir
 
     # Public: Create one or more directories recursively.
@@ -161,14 +155,14 @@ module WebHDFS
     #   FileUtils.rm 'dir', :recursive => true
     #
     def rm(list, options={})
-      fu_check_options options, OPT_TABLE['rm']
-      list = fu_list(list)
-      fu_log "rm #{list.join ' '}" if options[:verbose]
+      opts = options.dup
+      list = [list].flatten
+      fu_log "rm #{list.join ' '}" if opts.delete(:verbose)
+      c = client
       list.each { |dir|
-        fu_delete(dir, 'DELETE', {:recursive => options[:recursive] || false})
+        c.delete(dir, {:recursive => opts[:recursive] || false})
       }
     end
-    OPT_TABLE['rm'] = [:verbose, :recursive]
     module_function :rm
 
     # Public: Remove one or more directories/files recursively.
@@ -183,10 +177,8 @@ module WebHDFS
     #   FileUtils.rmr 'dir'
     #
     def rmr(list, options={})
-      fu_check_options options, OPT_TABLE['rmr']
       self.rm(list, options.merge({:recursive => true}))
     end
-    OPT_TABLE['rmr'] = [:verbose]
     module_function :rmr
 
     # Public: Rename a file or directory.
@@ -200,11 +192,10 @@ module WebHDFS
     #   FileUtils.rename 'from', 'to'
     #
     def rename(src, dst, options={})
-      fu_check_options options, OPT_TABLE['rename']
-      fu_log "rename #{src} #{dst}" if options[:verbose]
-      fu_put(src, 'RENAME', {:destination => dst})
+      opts = options.dup
+      fu_log "rename #{src} #{dst}" if opts.delete(:verbose)
+      client.rename(src, dst, opts)
     end
-    OPT_TABLE['rename'] = [:verbose]
     module_function :rename
 
     # Public: Change permission of one or more directories/files.
@@ -219,15 +210,15 @@ module WebHDFS
     #   FileUtils.chmod 0644, 'file'
     #
     def chmod(mode, list, options={})
-      fu_check_options options, OPT_TABLE['chmod']
-      list = fu_list(list)
-      fu_log sprintf('chmod %o %s', mode, list.join(' ')) if options[:verbose]
+      opts = options.dup
+      list = [list].flatten
+      fu_log sprintf('chmod %o %s', mode, list.join(' ')) if opts.delete(:verbose)
       mode = ('0%03o' % mode) if mode.is_a? Integer
-      list.each { |dir|
-        fu_put(dir, 'SETPERMISSION', {:permission => mode})
+      c = client
+      list.each { |entry|
+        c.chmod(entry, mode, opts)
       }
     end
-    OPT_TABLE['chmod'] = [:verbose]
     module_function :chmod
 
     # Public: Change an ownership of one or more directories/files.
@@ -243,16 +234,16 @@ module WebHDFS
     #   FileUtils.chmod 0644, 'file'
     #
     def chown(user, group, list, options={})
-      fu_check_options options, OPT_TABLE['chown']
-      list = fu_list(list)
+      opts = options.dup
+      list = [list].flatten
       fu_log sprintf('chown %s%s',
                      [user,group].compact.join(':') + ' ',
-                     list.join(' ')) if options[:verbose]
-      list.each { |dir|
-        fu_put(dir, 'SETOWNER', {:owner => user, :group => group})
+                     list.join(' ')) if opts.delete(:verbose)
+      c = client
+      list.each { |entry|
+        c.chown(entry, {:owner => user, :group => group})
       }
     end
-    OPT_TABLE['chown'] = [:verbose]
     module_function :chown
 
     # Public: Set a replication factor of files
@@ -266,15 +257,15 @@ module WebHDFS
     #   FileUtils.set_repl_factor 'file', 3
     #
     def set_repl_factor(list, num, options={})
-      fu_check_options options, OPT_TABLE['set_repl_factor']
-      list = fu_list(list)
+      opts = options.dup
+      list = [list].flatten
       fu_log sprintf('set_repl_factor %s %d',
-                     list.join(' '), num) if options[:verbose]
-      list.each { |dir|
-        fu_put(dir, 'SETREPLICATION', {:replication => num})
+                     list.join(' '), num) if opts.delete(:verbose)
+      c = client
+      list.each { |entry|
+        c.replication(entry, num, opts)
       }
     end
-    OPT_TABLE['set_repl_factor'] = [:verbose]
     module_function :set_repl_factor
 
     # Public: Set an access time of files
@@ -288,15 +279,15 @@ module WebHDFS
     #   FileUtils.set_atime 'file', Time.now
     #
     def set_atime(list, time, options={})
-      fu_check_options options, OPT_TABLE['set_atime']
-      list = fu_list(list)
+      opts = options.dup
+      list = [list].flatten
       time = time.to_i
-      fu_log sprintf('set_atime %s %d', list.join(' '), time) if options[:verbose]
-      list.each { |dir|
-        fu_put(dir, 'SETTIMES', {:accesstime => time})
+      fu_log sprintf('set_atime %s %d', list.join(' '), time) if opts.delete(:verbose)
+      c = client
+      list.each { |entry|
+        c.touch(entry, {:accesstime => time})
       }
     end
-    OPT_TABLE['set_atime'] = [:verbose]
     module_function :set_atime
 
     # Public: Set a modification time of files
@@ -310,15 +301,15 @@ module WebHDFS
     #   FileUtils.set_mtime 'file', Time.now
     #
     def set_mtime(list, time, options={})
-      fu_check_options options, OPT_TABLE['set_mtime']
-      list = fu_list(list)
+      opts = options.dup
+      list = [list].flatten
       time = time.to_i
-      fu_log sprintf('set_mtime %s %d', list.join(' '), time) if options[:verbose]
-      list.each { |dir|
-        fu_put(dir, 'SETTIMES', {:modificationtime => time})
+      fu_log sprintf('set_mtime %s %d', list.join(' '), time) if opts.delete(:verbose)
+      c = client
+      list.each { |entry|
+        c.touch(entry, {:modificationtime => time})
       }
     end
-    OPT_TABLE['set_mtime'] = [:verbose]
     module_function :set_mtime
 
     # Internal: make functin private
@@ -326,50 +317,6 @@ module WebHDFS
       module_function name
       private_class_method name
     end
-
-    # Internal: make list
-    def fu_list(arg)
-      [arg].flatten
-    end
-    private_module_function :fu_list
-
-    # Internal: HTTP GET
-    def fu_get(path, op, params={}, payload='')
-      url = "http://#{@fu_host}:#{@fu_port}/webhdfs/v1/#{path}"
-      RestClient.get url, :params => params.merge({:op => op})
-    end
-    private_module_function :fu_get
-
-    # Internal: HTTP PUT
-    def fu_put(path, op, params={}, payload='')
-      url = "http://#{@fu_host}:#{@fu_port}/webhdfs/v1/#{path}"
-      RestClient.put url, payload, :params => params.merge({:op => op})
-    end
-    private_module_function :fu_put
-
-    # Internal: HTTP POST
-    def fu_post(path, op, params={}, payload='')
-      url = "http://#{@fu_host}:#{@fu_port}/webhdfs/v1/#{path}"
-      RestClient.post url, payload, :params => params.merge({:op => op})
-    end
-    private_module_function :fu_post
-
-    # Internal: HTTP DELETE
-    def fu_delete(path, op, params={})
-      url = "http://#{@fu_host}:#{@fu_port}/webhdfs/v1/#{path}"
-      RestClient.delete url, :params => params.merge({:op => op})
-    end
-    private_module_function :fu_delete
-
-    # Internal: Check options Hash
-    def fu_check_options(options, optdecl)
-      h = options.dup
-      optdecl.each do |opt|
-        h.delete opt
-      end
-      raise ArgumentError, "no such option: #{h.keys.join(' ')}" unless h.empty?
-    end
-    private_module_function :fu_check_options
 
     @fileutils_output = $stderr
     @fileutils_label  = '[webhdfs]: '
@@ -380,5 +327,15 @@ module WebHDFS
       @fileutils_output.puts @fileutils_label + msg
     end
     private_module_function :fu_log
+
+    # Internal
+    def client
+      client = WebHDFS::Client.new(@fu_host, @fu_port, @fu_user, @fu_doas)
+      if @fu_httpfs_mode
+        client.httpfs_mode = true
+      end
+      client
+    end
+    private_module_function :client
   end
 end
