@@ -54,7 +54,7 @@ module WebHDFS
     def copy_from_local(file, path, options={})
       opts = options.dup
       fu_log "copy_from_local local=#{file} hdfs=#{path}" if opts.delete(:verbose)
-      if mode = options[:mode]
+      if mode = opts.delete(:mode)
         mode = ('0%03o' % mode) if mode.is_a? Integer
       else
         mode = '0644'
