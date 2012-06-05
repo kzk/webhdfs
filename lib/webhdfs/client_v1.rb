@@ -138,7 +138,8 @@ module WebHDFS
     #                          [&owner=<USER>][&group=<GROUP>]"
     def chown(path, options={})
       check_options(options, OPT_TABLE['SETOWNER'])
-      unless options.has_key?('owner') or options.has_key?('group')
+      unless options.has_key?('owner') or options.has_key?('group') or
+          options.has_key?(:owner) or options.has_key?(:group)
         raise ArgumentError, "'chown' needs at least one of owner or group"
       end
       res = operate_requests('PUT', path, 'SETOWNER', options)
@@ -162,7 +163,8 @@ module WebHDFS
     # accesstime: radix-10 logn integer
     def touch(path, options={})
       check_options(options, OPT_TABLE['SETTIMES'])
-      unless options.has_key?('modificationtime') or options.has_key?('accesstime')
+      unless options.has_key?('modificationtime') or options.has_key?('accesstime') or
+          options.has_key?(:modificationtime) or options.has_key?(:accesstime)
         raise ArgumentError, "'chown' needs at least one of modificationtime or accesstime"
       end
       res = operate_requests('PUT', path, 'SETTIMES', options)
