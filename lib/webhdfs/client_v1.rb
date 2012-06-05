@@ -228,7 +228,11 @@ module WebHDFS
                 end
         request(uri.host, uri.port, method, rpath, nil, {}, payload)
       else
-        request(@host, @port, method, path, op, params, payload)
+        if @httpfs_mode and not payload.nil?
+          request(@host, @port, method, path, op, params, payload, {'Content-Type' => 'application/octet-stream'})
+        else
+          request(@host, @port, method, path, op, params, payload)
+        end
       end
     end
 
@@ -238,7 +242,7 @@ module WebHDFS
     # IOException                   403 Forbidden
     # FileNotFoundException         404 Not Found
     # RumtimeException              500 Internal Server Error
-    def request(host, port, method, path, op=nil, params={}, payload=nil)
+    def request(host, port, method, path, op=nil, params={}, payload=nil, header=nil)
       conn = Net::HTTP.start(host, port)
       conn.open_timeout = @open_timeout if @open_timeout
       conn.read_timeout = @read_timeout if @read_timeout
@@ -249,7 +253,7 @@ module WebHDFS
                        path
                      end
 
-      res = conn.send_request(method, request_path, payload)
+      res = conn.send_request(method, request_path, payload, header)
 
       case res
       when Net::HTTPSuccess
