@@ -55,9 +55,9 @@ module WebHDFS
       opts = options.dup
       fu_log "copy_from_local local=#{file} hdfs=#{path}" if opts.delete(:verbose)
       if mode = opts.delete(:mode)
-        mode = ('0%03o' % mode) if mode.is_a? Integer
+        mode = ('%03o' % mode) if mode.is_a? Integer
       else
-        mode = '0644'
+        mode = '644'
       end
       opts[:permission] = mode
       opts[:overwrite] ||= true
@@ -213,7 +213,7 @@ module WebHDFS
       opts = options.dup
       list = [list].flatten
       fu_log sprintf('chmod %o %s', mode, list.join(' ')) if opts.delete(:verbose)
-      mode = ('0%03o' % mode) if mode.is_a? Integer
+      mode = ('%03o' % mode) if mode.is_a? Integer
       c = client
       list.each { |entry|
         c.chmod(entry, mode, opts)
