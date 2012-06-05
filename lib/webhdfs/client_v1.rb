@@ -182,8 +182,8 @@ module WebHDFS
     # end
 
     def check_options(options, optdecl=[])
-      ex = options.keys - (optdecl || [])
-      raise ArgumentError, "no such option: #{ex.keys.join(' ')}" unless ex.empty?
+      ex = options.keys.map(&:to_s) - (optdecl || [])
+      raise ArgumentError, "no such option: #{ex.join(' ')}" unless ex.empty?
     end
 
     def check_success_json(res, attr=nil)
