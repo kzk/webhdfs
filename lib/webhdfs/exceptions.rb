@@ -1,11 +1,12 @@
-module WebHDFS
-  class FileNotFoundError < StandardError; end
+module WebHDFS; end
+class WebHDFS::Error < StandardError; end
 
-  class IOError < StandardError; end
-  class SecurityError < StandardError; end
+class WebHDFS::FileNotFoundError < WebHDFS::Error; end
 
-  class ClientError < StandardError; end
-  class ServerError < StandardError; end
+class WebHDFS::IOError < WebHDFS::Error; end
+class WebHDFS::SecurityError < WebHDFS::Error; end
 
-  class RequestFailedError < StandardError; end
-end
+class WebHDFS::ClientError < WebHDFS::Error; end
+class WebHDFS::ServerError < WebHDFS::Error; end
+
+class WebHDFS::RequestFailedError < WebHDFS::Error; end
