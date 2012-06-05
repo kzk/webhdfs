@@ -62,7 +62,7 @@ module WebHDFS
       opts[:permission] = mode
       opts[:overwrite] ||= true
 
-      client.create(path, File.new(file, 'rb'), opts)
+      client.create(path, File.new(file, 'rb').read(File.size(file)), opts)
     end
     module_function :copy_from_local
 
