@@ -20,7 +20,7 @@ module WebHDFS
     #
     #   FileUtils.set_server 'localhost', 50070
     #
-    def set_server(host, port, user, doas)
+    def set_server(host, port, user=nil, doas=nil)
       @fu_host = host
       @fu_port = port
       @fu_user = user
