@@ -34,7 +34,7 @@ module WebHDFS
       res = operate_requests('PUT', path, 'CREATE', options, body)
       res.code == '201'
     end
-    OPT_TABLE['CREATE'] = ['overwrite', 'blocksize', 'replication', 'permission', 'buffersize']
+    OPT_TABLE['CREATE'] = ['overwrite', 'blocksize', 'replication', 'permission', 'buffersize', 'data']
 
     # curl -i -X POST "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=APPEND[&buffersize=<INT>]"
     def append(path, body, options={})
@@ -45,7 +45,7 @@ module WebHDFS
       res = operate_requests('POST', path, 'APPEND', options, body)
       res.code == '200'
     end
-    OPT_TABLE['APPEND'] = ['buffersize']
+    OPT_TABLE['APPEND'] = ['buffersize', 'data']
 
     # curl -i -L "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=OPEN
     #                [&offset=<LONG>][&length=<LONG>][&buffersize=<INT>]"
