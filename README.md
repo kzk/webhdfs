@@ -8,6 +8,8 @@ The webhdfs gem is to access Hadoop WebHDFS (EXPERIMENTAL: and HttpFs). WebHDFS:
 
 ## Usage
 
+### WebHDFS::Client
+
 For client object interface:
 
     require 'webhdfs'
@@ -75,4 +77,5 @@ For HttpFs instead of WebHDFS:
 
 ## LICENSE
 
-* TBD
+* Copyright: Copyright (c) 2012- Fluentd Project
+* License: Apache License, Version 2.0
