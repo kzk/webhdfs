@@ -11,7 +11,8 @@ module WebHDFS
     OPT_TABLE = {} # internal use only
 
     attr_accessor :host, :port, :username, :doas
-    attr_accessor :open_timeout, :read_timeout
+    attr_accessor :open_timeout # default 30s (in ruby net/http)
+    attr_accessor :read_timeout # default 60s (in ruby net/http)
     attr_accessor :httpfs_mode
 
     def initialize(host='localhost', port=50070, username=nil, doas=nil)
@@ -245,7 +246,7 @@ module WebHDFS
     # FileNotFoundException         404 Not Found
     # RumtimeException              500 Internal Server Error
     def request(host, port, method, path, op=nil, params={}, payload=nil, header=nil)
-      conn = Net::HTTP.start(host, port)
+      conn = Net::HTTP.new(host, port)
       conn.open_timeout = @open_timeout if @open_timeout
       conn.read_timeout = @read_timeout if @read_timeout
 
