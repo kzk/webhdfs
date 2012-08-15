@@ -229,7 +229,7 @@ module WebHDFS
                 else
                   uri.path
                 end
-        request(uri.host, uri.port, method, rpath, nil, {}, payload)
+        request(uri.host, uri.port, method, rpath, nil, {}, payload, {'Content-Type' => 'application/octet-stream'})
       else
         if @httpfs_mode and not payload.nil?
           request(@host, @port, method, path, op, params, payload, {'Content-Type' => 'application/octet-stream'})
