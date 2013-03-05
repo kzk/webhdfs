@@ -2,7 +2,8 @@ require 'test_helper'
 
 class FileUtilsTest < Test::Unit::TestCase
   def setup
-    require 'webhdfs'
+    require 'lib/webhdfs'
+    require 'lib/webhdfs/fileutils'
   end
 
   def test_copy_from_local
@@ -43,7 +44,7 @@ class FileUtilsTest < Test::Unit::TestCase
 
   def test_set_repl_factor
     WebHDFS::FileUtils.mkdir('foo', :mode => 0777, :verbose => true)
-    WebHDFS::FileUtils.set_repl_factor('foo', 5)
+    WebHDFS::FileUtils.set_repl_factor('foo', 2)
     WebHDFS::FileUtils.rm('foo', :verbose => true)
   end
 
