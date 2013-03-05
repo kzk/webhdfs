@@ -1,8 +1,5 @@
-
-if RUBY_VERSION.split('.')[1] == '8'
-
+if RUBY_VERSION =~ /^1\.8\./
   require 'cgi'
-
   def require_relative(relative_feature)
     file = caller.first.split(/:\d/,2).first
     raise LoadError, "require_relative is called in #{$1}" if /\A\((.*)\)/ =~ file
