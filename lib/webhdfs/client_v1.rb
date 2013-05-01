@@ -9,17 +9,22 @@ module WebHDFS
 
     # This hash table holds command options.
     OPT_TABLE = {} # internal use only
+    KNOWN_ERRORS = ['LeaseExpiredException'].freeze
 
     attr_accessor :host, :port, :username, :doas
     attr_accessor :open_timeout # default 30s (in ruby net/http)
     attr_accessor :read_timeout # default 60s (in ruby net/http)
     attr_accessor :httpfs_mode
+    attr_accessor :retry_known_errors # default false (not to retry)
+    attr_accessor :retry_times        # default 1 (ignored when retry_known_errors is false)
 
     def initialize(host='localhost', port=50070, username=nil, doas=nil)
       @host = host
       @port = port
       @username = username
       @doas = doas
+      @retry_known_errors = false
+      @retry_times = 1
 
       @httpfs_mode = false
     end
@@ -245,7 +250,7 @@ module WebHDFS
     # IOException                   403 Forbidden
     # FileNotFoundException         404 Not Found
     # RumtimeException              500 Internal Server Error
-    def request(host, port, method, path, op=nil, params={}, payload=nil, header=nil)
+    def request(host, port, method, path, op=nil, params={}, payload=nil, header=nil, retries=0)
       conn = Net::HTTP.new(host, port)
       conn.open_timeout = @open_timeout if @open_timeout
       conn.read_timeout = @read_timeout if @read_timeout
@@ -269,6 +274,21 @@ module WebHDFS
                   else
                     'Response body is empty...'
                   end
+
+        if @retry_known_errors && retries < @retry_times
+          detail = nil
+          if message =~ /^\{\\"RemoteException\\":\\\{/
+            begin
+              detail = JSON.parse(message)
+            rescue
+              # ignore broken json response body
+            end
+          end
+          if detail && detail['RemoteException'] && KNOWN_ERRORS.include?(detail['RemoteException']['exception'])
+            return request(host, port, method, path, op, params, payload, header, retries+1)
+          end
+        end
+
         case res.code
         when '400'
           raise WebHDFS::ClientError, message
