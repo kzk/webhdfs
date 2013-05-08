@@ -17,6 +17,7 @@ module WebHDFS
     attr_accessor :httpfs_mode
     attr_accessor :retry_known_errors # default false (not to retry)
     attr_accessor :retry_times        # default 1 (ignored when retry_known_errors is false)
+    attr_accessor :retry_interval     # default 1 ([sec], ignored when retry_known_errors is false)
 
     def initialize(host='localhost', port=50070, username=nil, doas=nil)
       @host = host
@@ -25,6 +26,7 @@ module WebHDFS
       @doas = doas
       @retry_known_errors = false
       @retry_times = 1
+      @retry_interval = 1
 
       @httpfs_mode = false
     end
@@ -285,6 +287,7 @@ module WebHDFS
             end
           end
           if detail && detail['RemoteException'] && KNOWN_ERRORS.include?(detail['RemoteException']['exception'])
+            sleep @retry_interval if @retry_interval > 0
             return request(host, port, method, path, op, params, payload, header, retries+1)
           end
         end
