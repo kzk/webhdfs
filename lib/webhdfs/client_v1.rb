@@ -279,7 +279,7 @@ module WebHDFS
 
         if @retry_known_errors && retries < @retry_times
           detail = nil
-          if message =~ /^\{\\"RemoteException\\":\\\{/
+          if message =~ /^\{"RemoteException":\{/
             begin
               detail = JSON.parse(message)
             rescue
