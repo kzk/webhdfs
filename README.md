@@ -68,7 +68,7 @@ For known errors, automated retries are available. Set `retry_known_errors` opti
 
 For HttpFs instead of WebHDFS:
 
-    client = WebHDFS::Client('hostname', 14000)
+    client = WebHDFS::Client.new('hostname', 14000)
     client.httpfs_mode = true
     
     client.read(path) #=> data
