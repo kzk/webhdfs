@@ -50,7 +50,7 @@ For known errors, automated retries are available. Set `retry_known_errors` opti
     client.retry_known_errors = true
     
     # client.retry_interval = 1 # [sec], default: 1
-    # clinet.retry_times = 1 # [times], default: 1
+    # client.retry_times = 1 # [times], default: 1
 
 ### WebHDFS::FileUtils
 
