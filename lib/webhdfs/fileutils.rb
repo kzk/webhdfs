@@ -15,16 +15,20 @@ module WebHDFS
     # port - port
     # user - username
     # doas - proxy user name
+    # proxy_address - address of the net http proxy to use
+    # proxy_port - port of the net http proxy to use
     #
     # Examples
     #
     #   FileUtils.set_server 'localhost', 50070
     #
-    def set_server(host, port, user=nil, doas=nil)
+    def set_server(host, port, user=nil, doas=nil, proxy_address=nil, proxy_port=nil)
       @fu_host = host
       @fu_port = port
       @fu_user = user
       @fu_doas = doas
+      @fu_paddr = proxy_address
+      @fu_pport = proxy_port
     end
     module_function :set_server
 
@@ -330,7 +334,7 @@ module WebHDFS
 
     # Internal
     def client
-      client = WebHDFS::Client.new(@fu_host, @fu_port, @fu_user, @fu_doas)
+      client = WebHDFS::Client.new(@fu_host, @fu_port, @fu_user, @fu_doas, @fu_paddr, @fu_pport)
       if @fu_httpfs_mode
         client.httpfs_mode = true
       end
