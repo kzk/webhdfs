@@ -11,7 +11,8 @@ module WebHDFS
     OPT_TABLE = {} # internal use only
     KNOWN_ERRORS = ['LeaseExpiredException'].freeze
 
-    attr_accessor :host, :port, :username, :doas
+    attr_accessor :host, :port, :username, :doas, :proxy_address, :proxy_port
+    attr_accessor :proxy_user, :proxy_pass
     attr_accessor :open_timeout # default 30s (in ruby net/http)
     attr_accessor :read_timeout # default 60s (in ruby net/http)
     attr_accessor :httpfs_mode
@@ -19,11 +20,14 @@ module WebHDFS
     attr_accessor :retry_times        # default 1 (ignored when retry_known_errors is false)
     attr_accessor :retry_interval     # default 1 ([sec], ignored when retry_known_errors is false)
 
-    def initialize(host='localhost', port=50070, username=nil, doas=nil)
+    def initialize(host='localhost', port=50070, username=nil, doas=nil, proxy_address=nil, proxy_port=nil)
       @host = host
       @port = port
       @username = username
       @doas = doas
+      @proxy_address = proxy_address
+      @proxy_pass = proxy_pass
+      @proxy_port = proxy_port
       @retry_known_errors = false
       @retry_times = 1
       @retry_interval = 1
@@ -253,7 +257,9 @@ module WebHDFS
     # FileNotFoundException         404 Not Found
     # RumtimeException              500 Internal Server Error
     def request(host, port, method, path, op=nil, params={}, payload=nil, header=nil, retries=0)
-      conn = Net::HTTP.new(host, port)
+      conn = Net::HTTP.new(host, port, @proxy_address, @proxy_port)
+      conn.proxy_user = @proxy_user if @proxy_user
+      conn.proxy_pass = @proxy_pass if @proxy_pass
       conn.open_timeout = @open_timeout if @open_timeout
       conn.read_timeout = @read_timeout if @read_timeout
 
