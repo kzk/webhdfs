@@ -78,6 +78,12 @@ For HttpFs instead of WebHDFS:
     WebHDFS::FileUtils.set_httpfs_mode
     WebHDFS::FileUtils.copy_to_local(remote_path, local_path)
 
+### For HTTP Proxy servers
+
+    client = WebHDFS::Client.new('hostname', 14000, 'proxy.server.local', 8080)
+    client.proxy_user = 'jack'   # if needed
+    client.proxy_pass = 'secret' # if needed
+
 ## AUTHORS
 
 * Kazuki Ohta <kazuki.ohta@gmail.com>

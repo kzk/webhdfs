@@ -26,7 +26,6 @@ module WebHDFS
       @username = username
       @doas = doas
       @proxy_address = proxy_address
-      @proxy_pass = proxy_pass
       @proxy_port = proxy_port
       @retry_known_errors = false
       @retry_times = 1

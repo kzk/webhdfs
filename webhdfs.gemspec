@@ -4,7 +4,7 @@ $:.push File.expand_path('../lib', __FILE__)
 Gem::Specification.new do |gem|
   gem.name        = "webhdfs"
   gem.description = "Ruby WebHDFS/HttpFs client"
-  gem.homepage    = ""
+  gem.homepage    = "https://github.com/kzk/webhdfs/"
   gem.summary     = gem.description
   gem.version     = File.read("VERSION").strip
   gem.authors     = ["Kazuki Ohta"]
