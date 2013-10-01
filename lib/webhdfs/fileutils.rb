@@ -70,6 +70,31 @@ module WebHDFS
     end
     module_function :copy_from_local
 
+    # Public: Copy local file into HDFS with IOStream
+    #
+    # file - local file IO handle
+    # path - HDFS file path
+    # options - :overwrite, :blocksize, :replication, :mode, :buffersize, :verbose
+    #
+    # Examples
+    #
+    #   FileUtils.copy_from_local_via_stream 'local_file_IO_handle', 'remote_file'
+    #
+    def copy_from_local_via_stream(file, path, options={})
+      opts = options.dup
+      fu_log "copy_from_local_via_stream local=#{file} hdfs=#{path}" if opts.delete(:verbose)
+      if mode = opts.delete(:mode)
+        mode = ('%03o' % mode) if mode.is_a? Integer
+      else
+        mode = '644'
+      end
+      opts[:permission] = mode
+      opts[:overwrite] ||= true
+
+      client.create(path, File.new(file, 'rb'), opts)
+    end
+    module_function :copy_from_local_via_stream
+
     # Public: Copy remote HDFS file into local
     #
     # path - HDFS file path

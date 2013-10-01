@@ -13,6 +13,11 @@ class FileUtilsTest < Test::Unit::TestCase
     WebHDFS::FileUtils.rm('VERSION', :verbose => true)
   end
 
+  def test_copy_from_local_via_stream
+    WebHDFS::FileUtils.copy_from_local_via_stream('VERSION', '/user/jay/VERSION', :verbose => true)
+    WebHDFS::FileUtils.rm('VERSION', :verbose => true)
+  end
+
   def test_rm
     WebHDFS::FileUtils.mkdir('foo', :mode => 0777, :verbose => true)
     WebHDFS::FileUtils.rm('foo', :verbose => true)
