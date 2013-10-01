@@ -21,7 +21,10 @@ To create/append/read files:
 
     client.create('/path/to/file', data)
     client.create('/path/to/file', data, :overwrite => false, :blocksize => 268435456, :replication => 5, :permission => 0666)
-    
+
+    #This does not require whole data in memory, and it can be read chunk by chunk, ex: File data
+    client.create('/path/to/file', file_IO_handle, :overwrite => false, :permission => 0666)
+
     client.append('/path/to/existing/file', data)
     
     client.read('/path/to/target') #=> data

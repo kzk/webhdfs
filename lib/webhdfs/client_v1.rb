@@ -268,7 +268,17 @@ module WebHDFS
                        path
                      end
 
-      res = conn.send_request(method, request_path, payload, header)
+      if !payload.nil? and payload.is_a?(IO)
+        req = Net::HTTPGenericRequest.new(method,(payload ? true : false),true,request_path,header)
+        raise WebHDFS::IOError, 'Error reading given IO as data source' unless payload.respond_to? :read and payload.respond_to? :size
+        raise WebHDFS::ClientError, 'Error accepting IO resource as http data, Not valid in method other than PUT and POST' unless (method == 'PUT' or method == 'POST')
+
+        req.body_stream = payload
+        req.content_length = payload.size
+        res = conn.request(req)
+      else
+        conn.send_request(method, request_path, payload, header)
+      end
 
       case res
       when Net::HTTPSuccess
