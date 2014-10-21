@@ -8,6 +8,9 @@ module WebHDFS
     @fu_user = nil
     @fu_doas = nil
     @fu_httpfs_mode = false
+    @fu_ssl = false
+    @fu_ssl_ca_file = nil
+    @fu_ssl_verify_mode = nil
 
     # Public: Set hostname and port number of WebHDFS
     #
@@ -44,6 +47,45 @@ module WebHDFS
       @fu_httpfs_mode = mode
     end
     module_function :set_httpfs_mode
+
+    # Public: Set ssl enable/disable
+    #
+    # mode - boolean (default true)
+    #
+    # Examples
+    #
+    #   FileUtils.set_ssl
+    #
+    def set_ssl(mode=true)
+      @fu_ssl = mode
+    end
+    module_function :set_ssl
+
+    # Public: Set ssl ca_file
+    #
+    # ca_file - string
+    #
+    # Examples
+    #
+    #   FileUtils.set_ca_file("/path/to/ca_file.pem")
+    #
+    def set_ssl_ca_file(ca_file)
+      @fu_ssl_ca_file = ca_file
+    end
+    module_function :set_ssl_ca_file
+
+    # Public: Set ssl verify mode
+    #
+    # mode - :none or :peer
+    #
+    # Examples
+    #
+    #   FileUtils.set_ssl_verify_mode(:peer)
+    #
+    def set_ssl_verify_mode(mode)
+      @fu_ssl_verify_mode = mode
+    end
+    module_function :set_ssl_verify_mode
 
     # Public: Copy local file into HDFS
     #
@@ -363,6 +405,9 @@ module WebHDFS
       if @fu_httpfs_mode
         client.httpfs_mode = true
       end
+      client.ssl = true if @fu_ssl
+      client.ssl_ca_file = @fu_ssl_ca_file if @fu_ssl_ca_file
+      client.ssl_verify_mode = @fu_ssl_verify_mode if @fu_ssl_verify_mode
       client
     end
     private_module_function :client

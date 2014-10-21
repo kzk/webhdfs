@@ -87,6 +87,15 @@ For HttpFs instead of WebHDFS:
     client.proxy_user = 'jack'   # if needed
     client.proxy_pass = 'secret' # if needed
 
+### For SSL
+
+Note that net/https and openssl libraries must be available:
+
+    client = WebHDFS::Client.new('hostname', 4443)
+    client.ssl = true
+    client.ssl_ca_file = "/path/to/ca_file.pem" # if needed
+    client.ssl_varify_mode = :peer # if needed (:none or :peer)
+
 ## AUTHORS
 
 * Kazuki Ohta <kazuki.ohta@gmail.com>
