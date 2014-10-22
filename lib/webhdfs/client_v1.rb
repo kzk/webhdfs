@@ -295,9 +295,8 @@ module WebHDFS
       end
 
       res = nil
-      if !payload.nil? and payload.is_a?(IO)
+      if !payload.nil? and payload.respond_to? :read and payload.respond_to? :size
         req = Net::HTTPGenericRequest.new(method,(payload ? true : false),true,request_path,header)
-        raise WebHDFS::IOError, 'Error reading given IO data source' unless payload.respond_to? :read and payload.respond_to? :size
         raise WebHDFS::ClientError, 'Error accepting given IO resource as data payload, Not valid in methods other than PUT and POST' unless (method == 'PUT' or method == 'POST')
 
         req.body_stream = payload
