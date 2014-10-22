@@ -10,3 +10,5 @@ class WebHDFS::ClientError < WebHDFS::Error; end
 class WebHDFS::ServerError < WebHDFS::Error; end
 
 class WebHDFS::RequestFailedError < WebHDFS::Error; end
+
+class WebHDFS::KerberosError < WebHDFS::Error; end
