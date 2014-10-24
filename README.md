@@ -96,6 +96,13 @@ Note that net/https and openssl libraries must be available:
     client.ssl_ca_file = "/path/to/ca_file.pem" # if needed
     client.ssl_varify_mode = :peer # if needed (:none or :peer)
 
+### For Kerberos Authentication
+
+Note that [gssapi](https://github.com/zenchild/gssapi) library must be available:
+
+    client = WebHDFS::Client.new('hostname', 14000)
+    client.kerberos = true
+
 ## AUTHORS
 
 * Kazuki Ohta <kazuki.ohta@gmail.com>

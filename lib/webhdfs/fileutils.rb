@@ -11,6 +11,7 @@ module WebHDFS
     @fu_ssl = false
     @fu_ssl_ca_file = nil
     @fu_ssl_verify_mode = nil
+    @fu_kerberos = false
 
     # Public: Set hostname and port number of WebHDFS
     #
@@ -86,6 +87,19 @@ module WebHDFS
       @fu_ssl_verify_mode = mode
     end
     module_function :set_ssl_verify_mode
+
+    # Public: Set kerberos authentication enable/disable
+    #
+    # mode - boolean (default true)
+    #
+    # Examples
+    #
+    #   FileUtils.set_kerberos
+    #
+    def set_kerberos(mode=true)
+      @fu_kerberos = mode
+    end
+    module_function :set_kerberos
 
     # Public: Copy local file into HDFS
     #
@@ -408,6 +422,7 @@ module WebHDFS
       client.ssl = true if @fu_ssl
       client.ssl_ca_file = @fu_ssl_ca_file if @fu_ssl_ca_file
       client.ssl_verify_mode = @fu_ssl_verify_mode if @fu_ssl_verify_mode
+      client.kerberos = true if @fu_kerberos
       client
     end
     private_module_function :client

@@ -22,6 +22,7 @@ module WebHDFS
     attr_accessor :ssl
     attr_accessor :ssl_ca_file
     attr_reader   :ssl_verify_mode
+    attr_accessor :kerberos
 
     SSL_VERIFY_MODES = [:none, :peer]
     def ssl_verify_mode=(mode)
@@ -47,6 +48,8 @@ module WebHDFS
       @ssl = false
       @ssl_ca_file = nil
       @ssl_verify_mode = nil
+
+      @kerberos = false
     end
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATE
@@ -294,6 +297,24 @@ module WebHDFS
         end
       end
 
+      gsscli = nil
+      if @kerberos
+        require 'base64'
+        require 'gssapi'
+        gsscli = GSSAPI::Simple.new(@host, 'HTTP')
+        token = nil
+        begin
+          token = gsscli.init_context
+        rescue => e
+          raise WebHDFS::KerberosError, e.message
+        end
+        if header
+          header['Authorization'] = "Negotiate #{Base64.strict_encode64(token)}"
+        else
+          header = {'Authorization' => "Negotiate #{Base64.strict_encode64(token)}"}
+        end
+      end
+
       res = nil
       if !payload.nil? and payload.is_a?(IO)
         req = Net::HTTPGenericRequest.new(method,(payload ? true : false),true,request_path,header)
@@ -305,6 +326,19 @@ module WebHDFS
         res = conn.request(req)
       else
         res = conn.send_request(method, request_path, payload, header)
+      end
+
+      if @kerberos
+        itok = (res.header.get_fields('WWW-Authenticate') || ['']).pop.split(/\s+/).last
+        unless itok
+          raise WebHDFS::KerberosError, 'Server does not return WWW-Authenticate header'
+        end
+
+        begin
+          gsscli.init_context(Base64.strict_decode64(itok))
+        rescue => e
+          raise WebHDFS::KerberosError, e.message
+        end
       end
 
       case res
