@@ -32,7 +32,7 @@ module WebHDFS
       @ssl_verify_mode = mode
     end
 
-    def initialize(host='localhost', port=50070, username=nil, doas=nil, proxy_address=nil, proxy_port=nil, knox_path=nil)
+    def initialize(host='localhost', port=50070, username=nil, doas=nil, proxy_address=nil, proxy_port=nil, knox_path='', knox_user='', knox_pw='')
       @host = host
       @port = port
       @username = username
@@ -50,7 +50,9 @@ module WebHDFS
       @ssl_verify_mode = nil
 
       @kerberos = false
-      @knox_path = knox_path || ''
+      @knox_path = knox_path
+      @knox_user = knox_user
+      @knox_pw = knox_pw
     end
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATE
@@ -275,29 +277,13 @@ module WebHDFS
     # FileNotFoundException         404 Not Found
     # RumtimeException              500 Internal Server Error
     def request(host, port, method, path, op=nil, params={}, payload=nil, header=nil, retries=0)
-      conn = Net::HTTP.new(host, port, @proxy_address, @proxy_port)
-      conn.proxy_user = @proxy_user if @proxy_user
-      conn.proxy_pass = @proxy_pass if @proxy_pass
-      conn.open_timeout = @open_timeout if @open_timeout
-      conn.read_timeout = @read_timeout if @read_timeout
+      conn = build_connection(host, port)
 
       request_path = if op
                        build_path(path, op, params)
                      else
                        path
                      end
-      if @ssl
-        conn.use_ssl = true
-        conn.ca_file = @ssl_ca_file if @ssl_ca_file
-        if @ssl_verify_mode
-          require 'openssl'
-          conn.verify_mode = case @ssl_verify_mode
-                             when :none then OpenSSL::SSL::VERIFY_NONE
-                             when :peer then OpenSSL::SSL::VERIFY_PEER
-                             end
-        end
-      end
-
       gsscli = nil
       if @kerberos
         require 'base64'
@@ -316,17 +302,17 @@ module WebHDFS
         end
       end
 
-      res = nil
+      req = Net::HTTPGenericRequest.new(method,(payload ? true : false),true,request_path,header)
+
       if !payload.nil? and payload.respond_to? :read and payload.respond_to? :size
-        req = Net::HTTPGenericRequest.new(method,(payload ? true : false),true,request_path,header)
         raise WebHDFS::ClientError, 'Error accepting given IO resource as data payload, Not valid in methods other than PUT and POST' unless (method == 'PUT' or method == 'POST')
 
         req.body_stream = payload
         req.content_length = payload.size
-        res = conn.request(req)
-      else
-        res = conn.send_request(method, request_path, payload, header)
       end
+
+      req.basic_auth @knox_user, @knox_pw if @knox_user || @knox_pw
+      res = conn.request(req)
 
       if @kerberos
         itok = (res.header.get_fields('WWW-Authenticate') || ['']).pop.split(/\s+/).last
@@ -383,6 +369,29 @@ module WebHDFS
           raise WebHDFS::RequestFailedError, "response code:#{res.code}, message:#{message}"
         end
       end
+    end
+
+    def build_connection(host, port)
+      conn = Net::HTTP.new(host, port, @proxy_address, @proxy_port)
+      conn.proxy_user = @proxy_user if @proxy_user
+      conn.proxy_pass = @proxy_pass if @proxy_pass
+      conn.open_timeout = @open_timeout if @open_timeout
+      conn.read_timeout = @read_timeout if @read_timeout
+
+      if @ssl
+        conn.use_ssl = true
+        conn.ca_file = @ssl_ca_file if @ssl_ca_file
+        if @ssl_verify_mode
+          require 'openssl'
+          conn.verify_mode = case @ssl_verify_mode
+                             when :none then
+                               OpenSSL::SSL::VERIFY_NONE
+                             when :peer then
+                               OpenSSL::SSL::VERIFY_PEER
+                             end
+        end
+      end
+      conn
     end
   end
 end
