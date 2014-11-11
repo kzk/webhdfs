@@ -32,7 +32,7 @@ module WebHDFS
       @ssl_verify_mode = mode
     end
 
-    def initialize(host='localhost', port=50070, username=nil, doas=nil, proxy_address=nil, proxy_port=nil)
+    def initialize(host='localhost', port=50070, username=nil, doas=nil, proxy_address=nil, proxy_port=nil, knox_path=nil)
       @host = host
       @port = port
       @username = username
@@ -50,6 +50,7 @@ module WebHDFS
       @ssl_verify_mode = nil
 
       @kerberos = false
+      @knox_path = knox_path || ''
     end
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATE
@@ -223,9 +224,9 @@ module WebHDFS
 
     def api_path(path)
       if path.start_with?('/')
-        '/webhdfs/v1' + path
+        @knox_path + '/webhdfs/v1' + path
       else
-        '/webhdfs/v1/' + path
+        @knox_path + '/webhdfs/v1/' + path
       end
     end
 
