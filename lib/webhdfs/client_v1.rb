@@ -225,11 +225,9 @@ module WebHDFS
     end
 
     def api_path(path)
-      if path.start_with?('/')
-        @knox_path + '/webhdfs/v1' + path
-      else
-        @knox_path + '/webhdfs/v1/' + path
-      end
+      return path if path.start_with?(@knox_path + '/webhdfs/v1')
+
+      "#{@knox_path}/webhdfs/v1#{'/' unless path.start_with?('/')}#{path}"
     end
 
     def build_path(path, op, params)

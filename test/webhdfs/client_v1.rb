@@ -12,6 +12,11 @@ describe WebHDFS::ClientV1 do
       client = WebHDFS::ClientV1.new('host', 8443)
       client.api_path('').must_equal '/webhdfs/v1/'
     end
+
+    it 'does not add the path if already present' do
+      client = WebHDFS::ClientV1.new('host', 8443, nil, nil, nil, nil, '/gateway/cluster')
+      client.api_path('/gateway/cluster/webhdfs/v1/path').must_equal '/gateway/cluster/webhdfs/v1/path'
+    end
   end
 
   describe 'basic auth' do
