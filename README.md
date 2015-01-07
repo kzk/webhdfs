@@ -20,7 +20,7 @@ For client object interface:
 To create/append/read files:
 
     client.create('/path/to/file', data)
-    client.create('/path/to/file', data, :overwrite => false, :blocksize => 268435456, :replication => 5, :permission => 0666)
+    client.create('/path/to/file', data, :overwrite => false, :blocksize => 268435456, :replication => 5, :permission => '0666')
 
     #This does not require whole data in memory, and it can be read chunk by chunk, ex: File data
     client.create('/path/to/file', file_IO_handle, :overwrite => false, :permission => 0666)
@@ -33,7 +33,7 @@ To create/append/read files:
 To mkdir/rename/delete directories or files:
 
     client.mkdir('/hdfs/dirname')
-    client.mkdir('/hdfs/dirname', :permission => 0777)
+    client.mkdir('/hdfs/dirname', :permission => '0777')
     
     client.rename(original_path, dst_path)
     
