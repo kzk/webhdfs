@@ -280,6 +280,7 @@ module WebHDFS
       conn.open_timeout = @open_timeout if @open_timeout
       conn.read_timeout = @read_timeout if @read_timeout
 
+      path = URI.escape(path) # make path safe for transmission via HTTP
       request_path = if op
                        build_path(path, op, params)
                      else
