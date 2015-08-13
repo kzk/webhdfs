@@ -20,4 +20,5 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "rdoc"
   gem.add_development_dependency "simplecov"
   gem.add_development_dependency "rr"
+  gem.add_runtime_dependency "addressable"
 end
