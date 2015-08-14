@@ -329,7 +329,7 @@ module WebHDFS
         res = conn.send_request(method, request_path, payload, header)
       end
 
-      if @kerberos
+      if @kerberos and res.code == '307'
         itok = (res.header.get_fields('WWW-Authenticate') || ['']).pop.split(/\s+/).last
         unless itok
           raise WebHDFS::KerberosError, 'Server does not return WWW-Authenticate header'
