@@ -24,6 +24,7 @@ module WebHDFS
     attr_accessor :ssl_ca_file
     attr_reader   :ssl_verify_mode
     attr_accessor :kerberos, :kerberos_keytab
+    attr_accessor :http_headers
 
     SSL_VERIFY_MODES = [:none, :peer]
     def ssl_verify_mode=(mode)
@@ -33,7 +34,7 @@ module WebHDFS
       @ssl_verify_mode = mode
     end
 
-    def initialize(host='localhost', port=50070, username=nil, doas=nil, proxy_address=nil, proxy_port=nil)
+    def initialize(host='localhost', port=50070, username=nil, doas=nil, proxy_address=nil, proxy_port=nil, http_headers={})
       @host = host
       @port = port
       @username = username
@@ -52,6 +53,7 @@ module WebHDFS
 
       @kerberos = false
       @kerberos_keytab = nil
+      @http_headers = http_headers
     end
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATE
@@ -316,6 +318,9 @@ module WebHDFS
         else
           header = {'Authorization' => "Negotiate #{Base64.strict_encode64(token)}"}
         end
+      else
+        header = {} if header.nil?
+        header = @http_headers.merge(header)
       end
 
       res = nil
