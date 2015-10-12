@@ -23,7 +23,7 @@ module WebHDFS
     attr_accessor :ssl
     attr_accessor :ssl_ca_file
     attr_reader   :ssl_verify_mode
-    attr_accessor :kerberos
+    attr_accessor :kerberos, :kerberos_keytab
 
     SSL_VERIFY_MODES = [:none, :peer]
     def ssl_verify_mode=(mode)
@@ -51,6 +51,7 @@ module WebHDFS
       @ssl_verify_mode = nil
 
       @kerberos = false
+      @kerberos_keytab = nil
     end
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATE
@@ -303,7 +304,7 @@ module WebHDFS
       if @kerberos
         require 'base64'
         require 'gssapi'
-        gsscli = GSSAPI::Simple.new(@host, 'HTTP')
+        gsscli = GSSAPI::Simple.new(@host, 'HTTP', @kerberos_keytab)
         token = nil
         begin
           token = gsscli.init_context

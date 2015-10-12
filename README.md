@@ -102,6 +102,7 @@ Note that [gssapi](https://github.com/zenchild/gssapi) library must be available
 
     client = WebHDFS::Client.new('hostname', 14000)
     client.kerberos = true
+    client.kerberos_keytab = "/path/to/project.keytab"
 
 ## AUTHORS
 
