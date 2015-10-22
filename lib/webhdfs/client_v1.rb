@@ -330,9 +330,17 @@ module WebHDFS
 
         req.body_stream = payload
         req.content_length = payload.size
-        res = conn.request(req)
+        begin
+          res = conn.request(req)
+        rescue => e
+          raise WebHDFS::ServerError, "Failed to connect to host #{host}:#{port}, #{e.message}"
+        end
       else
-        res = conn.send_request(method, request_path, payload, header)
+        begin
+          res = conn.send_request(method, request_path, payload, header)
+        rescue => e
+          raise WebHDFS::ServerError, "Failed to connect to host #{host}:#{port}, #{e.message}"
+        end
       end
 
       if @kerberos and res.code == '307'
