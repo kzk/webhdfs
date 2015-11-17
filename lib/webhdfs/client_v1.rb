@@ -20,6 +20,7 @@ module WebHDFS
     attr_accessor :retry_known_errors # default false (not to retry)
     attr_accessor :retry_times        # default 1 (ignored when retry_known_errors is false)
     attr_accessor :retry_interval     # default 1 ([sec], ignored when retry_known_errors is false)
+    attr_accessor :reuse_connection   # default false (do not try to reuse HTTP connection)
     attr_accessor :ssl
     attr_accessor :ssl_ca_file
     attr_reader   :ssl_verify_mode
@@ -54,6 +55,8 @@ module WebHDFS
       @kerberos = false
       @kerberos_keytab = nil
       @http_headers = http_headers
+      @reuse_connection = false
+      @connection = nil
     end
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATE
@@ -278,11 +281,7 @@ module WebHDFS
     # FileNotFoundException         404 Not Found
     # RumtimeException              500 Internal Server Error
     def request(host, port, method, path, op=nil, params={}, payload=nil, header=nil, retries=0)
-      conn = Net::HTTP.new(host, port, @proxy_address, @proxy_port)
-      conn.proxy_user = @proxy_user if @proxy_user
-      conn.proxy_pass = @proxy_pass if @proxy_pass
-      conn.open_timeout = @open_timeout if @open_timeout
-      conn.read_timeout = @read_timeout if @read_timeout
+      conn = connection(host, port) # private function that implements reuse
 
       path = Addressable::URI.escape(path) # make path safe for transmission via HTTP
       request_path = if op
@@ -290,17 +289,6 @@ module WebHDFS
                      else
                        path
                      end
-      if @ssl
-        conn.use_ssl = true
-        conn.ca_file = @ssl_ca_file if @ssl_ca_file
-        if @ssl_verify_mode
-          require 'openssl'
-          conn.verify_mode = case @ssl_verify_mode
-                             when :none then OpenSSL::SSL::VERIFY_NONE
-                             when :peer then OpenSSL::SSL::VERIFY_PEER
-                             end
-        end
-      end
 
       gsscli = nil
       if @kerberos
@@ -398,6 +386,82 @@ module WebHDFS
           raise WebHDFS::RequestFailedError, "response code:#{res.code}, message:#{message}"
         end
       end
+    end
+
+    private
+
+    #
+    # Get an existing or new HTTP connection.  Provides the ability
+    # to reuse a HTTP connection for multiple calls to the same
+    # host:port.  This reuse optimization can improve performance by
+    # a factor of 2 for applications that perform a lot of metadata
+    # operations.
+    #
+    def connection(host, port)
+      # check whether an existing connection is ready to use
+      conn = reuse_connection_if_possible(host, port)
+      return conn if conn
+
+      # create and set up a new connection
+      conn = create_connection(host, port)
+
+      # set up to reuse the connection, if this option is configured
+      return conn unless @reuse_connection
+
+      # conn.start is required to keep HTTP connection open between requests.
+      # The corresponding conn.finish is performed (when necessary)
+      # in reuse_connection_if_possible.  When start is not called,
+      # Net::HTTP sets the HTTP request 'Connection' header to 'close',
+      # causing the server to terminate the HTTP connection after every
+      # request.  For more information, see the documentation for Net::HTTP.
+      conn.start
+      @connection = { 'host' => host, 'port' => port, 'conn' => conn }
+      conn
+    end
+
+    #
+    # Create a new Net::HTTP connection and set it up according
+    # to the configuration of this object.
+    #
+    def create_connection(host, port)
+      conn = Net::HTTP.new(host, port, @proxy_address, @proxy_port)
+      conn.proxy_user = @proxy_user if @proxy_user
+      conn.proxy_pass = @proxy_pass if @proxy_pass
+      conn.open_timeout = @open_timeout if @open_timeout
+      conn.read_timeout = @read_timeout if @read_timeout
+
+      # configure ssl, if required
+      return conn unless @ssl
+      conn.use_ssl = true
+      conn.ca_file = @ssl_ca_file if @ssl_ca_file
+
+      # configure ssl_verify_mode if required
+      return conn unless @ssl_verify_mode
+      require 'openssl'
+      conn.verify_mode = case @ssl_verify_mode
+                         when :none then OpenSSL::SSL::VERIFY_NONE
+                         when :peer then OpenSSL::SSL::VERIFY_PEER
+                         end
+      conn
+    end
+
+    #
+    # Check whether it is possible to reuse an existing connection.
+    # This check will only succeed if:
+    # - The class variable @reuse_connection is set.
+    # - The connection has already been established to the requested
+    #   host and port.
+    #
+    # If the connection exists, but does not correspond to the requested
+    # host and port, then the existing connection is terminated.
+    #
+    def reuse_connection_if_possible(host, port)
+      return nil unless @connection
+      if (@connection['host'] = host) && (@connection['port'] = port)
+        return @connection['conn']
+      end
+      @connection['conn'].finish # matches conn.start in connection()
+      @connection = nil # set to nil and return
     end
   end
 end
