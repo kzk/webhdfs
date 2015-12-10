@@ -23,6 +23,9 @@ module WebHDFS
     attr_accessor :ssl
     attr_accessor :ssl_ca_file
     attr_reader   :ssl_verify_mode
+    attr_accessor :ssl_cert
+    attr_accessor :ssl_key
+    attr_accessor :ssl_version
     attr_accessor :kerberos, :kerberos_keytab
     attr_accessor :http_headers
 
@@ -50,6 +53,9 @@ module WebHDFS
       @ssl = false
       @ssl_ca_file = nil
       @ssl_verify_mode = nil
+      @ssl_cert = nil
+      @ssl_key = nil
+      @ssl_version = nil
 
       @kerberos = false
       @kerberos_keytab = nil
@@ -300,6 +306,9 @@ module WebHDFS
                              when :peer then OpenSSL::SSL::VERIFY_PEER
                              end
         end
+        conn.cert = @ssl_cert if @ssl_cert
+        conn.key = @ssl_key if @ssl_key
+        conn.ssl_version = @ssl_version if @ssl_version
       end
 
       gsscli = nil
