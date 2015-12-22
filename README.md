@@ -95,6 +95,7 @@ Note that net/https and openssl libraries must be available:
     client.ssl = true
     client.ssl_ca_file = "/path/to/ca_file.pem" # if needed
     client.ssl_varify_mode = :peer # if needed (:none or :peer)
+    client.ssl_version = :TLSv1 # if needed
 
 ### For Kerberos Authentication
 
@@ -103,6 +104,17 @@ Note that [gssapi](https://github.com/zenchild/gssapi) library must be available
     client = WebHDFS::Client.new('hostname', 14000)
     client.kerberos = true
     client.kerberos_keytab = "/path/to/project.keytab"
+
+### For SSL Client Authentication
+
+Note that openssl libraries must be available:
+
+    require 'openssl'
+    
+    client = WebHDFS::Client.new(host, port)
+    client.ssl = true
+    client.ssl_key = OpenSSL::PKey::RSA.new(open('/path/to/key.pem'))
+    client.ssl_cert = OpenSSL::X509::Certificate.new(open('/path/to/cert.pem'))
 
 ## AUTHORS
 
