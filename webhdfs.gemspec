@@ -7,13 +7,11 @@ Gem::Specification.new do |gem|
   gem.homepage    = "https://github.com/kzk/webhdfs/"
   gem.summary     = gem.description
   gem.version     = File.read("VERSION").strip
-  gem.authors     = ["Kazuki Ohta"]
-  gem.email       = "kazuki.ohta@gmail.com"
+  gem.authors     = ["Kazuki Ohta", "Satoshi Tagomori"]
+  gem.email       = ["kazuki.ohta@gmail.com", "tagomoris@gmail.com"]
   gem.has_rdoc    = false
-  #gem.platform    = Gem::Platform::RUBY
-  gem.files       = `git ls-files`.split("\n")
-  gem.test_files  = `git ls-files -- {test,spec,features}/*`.split("\n")
-  gem.executables = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
+  gem.files       = Dir['lib/**/*','test/**/*','*.gemspec','*.md','AUTHORS','COPYING','Gemfile','VERSION']
+  gem.test_files  = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ['lib']
 
   gem.add_development_dependency "rake"
