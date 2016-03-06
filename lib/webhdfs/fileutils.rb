@@ -4,7 +4,7 @@ module WebHDFS
   module FileUtils
     # Those values hold NameNode location
     @fu_host = 'localhost'
-    @fu_port = 50070
+    @fu_port = 50_070
     @fu_user = nil
     @fu_doas = nil
     @fu_httpfs_mode = false
@@ -26,7 +26,7 @@ module WebHDFS
     #
     #   FileUtils.set_server 'localhost', 50070
     #
-    def set_server(host, port, user=nil, doas=nil, proxy_address=nil, proxy_port=nil)
+    def set_server(host, port, user = nil, doas = nil, proxy_address = nil, proxy_port = nil)
       @fu_host = host
       @fu_port = port
       @fu_user = user
@@ -44,7 +44,7 @@ module WebHDFS
     #
     #   FileUtils.set_httpfs_mode
     #
-    def set_httpfs_mode(mode=true)
+    def set_httpfs_mode(mode = true)
       @fu_httpfs_mode = mode
     end
     module_function :set_httpfs_mode
@@ -57,7 +57,7 @@ module WebHDFS
     #
     #   FileUtils.set_ssl
     #
-    def set_ssl(mode=true)
+    def set_ssl(mode = true)
       @fu_ssl = mode
     end
     module_function :set_ssl
@@ -96,7 +96,7 @@ module WebHDFS
     #
     #   FileUtils.set_kerberos
     #
-    def set_kerberos(mode=true)
+    def set_kerberos(mode = true)
       @fu_kerberos = mode
     end
     module_function :set_kerberos
@@ -111,7 +111,7 @@ module WebHDFS
     #
     #   FileUtils.copy_from_local 'local_file', 'remote_file'
     #
-    def copy_from_local(file, path, options={})
+    def copy_from_local(file, path, options = {})
       opts = options.dup
       fu_log "copy_from_local local=#{file} hdfs=#{path}" if opts.delete(:verbose)
       if mode = opts.delete(:mode)
@@ -136,7 +136,7 @@ module WebHDFS
     #
     #   FileUtils.copy_from_local_via_stream 'local_file_IO_handle', 'remote_file'
     #
-    def copy_from_local_via_stream(file, path, options={})
+    def copy_from_local_via_stream(file, path, options = {})
       opts = options.dup
       fu_log "copy_from_local_via_stream local=#{file} hdfs=#{path}" if opts.delete(:verbose)
       if mode = opts.delete(:mode)
@@ -161,10 +161,10 @@ module WebHDFS
     #
     #   FileUtils.copy_to_local 'remote_file', 'local_file'
     #
-    def copy_to_local(path, file, options={})
+    def copy_to_local(path, file, options = {})
       opts = options.dup
       fu_log "copy_to_local hdfs=#{path} local=#{file}" if opts.delete(:verbose)
-      File.open(file, "wb") do |f|
+      File.open(file, 'wb') do |f|
         f.write client.read(path, opts)
       end
     end
@@ -180,7 +180,7 @@ module WebHDFS
     #
     #   FileUtils.append 'remote_path', 'contents'
     #
-    def append(path, body, options={})
+    def append(path, body, options = {})
       opts = options.dup
       fu_log "append #{body.bytesize} bytes to #{path}" if opts.delete(:verbose)
       client.append(path, body, opts)
@@ -198,7 +198,7 @@ module WebHDFS
     #   FileUtils.mkdir %w( tmp data )
     #   FileUtils.mkdir 'tmp', :mode => 0700
     #
-    def mkdir(list, options={})
+    def mkdir(list, options = {})
       opts = options.dup
       list = [list].flatten
       fu_log "mkdir #{options[:mode] ? ('-m %03o ' % options[:mode]) : ''}#{list.join ' '}" if opts.delete(:verbose)
@@ -208,9 +208,9 @@ module WebHDFS
         mode = '0755'
       end
       c = client
-      list.each { |dir|
-        c.mkdir(dir, {:permission => mode})
-      }
+      list.each do |dir|
+        c.mkdir(dir, permission: mode)
+      end
     end
     module_function :mkdir
 
@@ -239,14 +239,14 @@ module WebHDFS
     #   FileUtils.rm %w( tmp data )
     #   FileUtils.rm 'dir', :recursive => true
     #
-    def rm(list, options={})
+    def rm(list, options = {})
       opts = options.dup
       list = [list].flatten
       fu_log "rm #{list.join ' '}" if opts.delete(:verbose)
       c = client
-      list.each { |dir|
-        c.delete(dir, {:recursive => opts[:recursive] || false})
-      }
+      list.each do |dir|
+        c.delete(dir, recursive: opts[:recursive] || false)
+      end
     end
     module_function :rm
 
@@ -261,8 +261,8 @@ module WebHDFS
     #   FileUtils.rmr %w( tmp data )
     #   FileUtils.rmr 'dir'
     #
-    def rmr(list, options={})
-      self.rm(list, options.merge({:recursive => true}))
+    def rmr(list, options = {})
+      rm(list, options.merge(recursive: true))
     end
     module_function :rmr
 
@@ -276,7 +276,7 @@ module WebHDFS
     #
     #   FileUtils.rename 'from', 'to'
     #
-    def rename(src, dst, options={})
+    def rename(src, dst, options = {})
       opts = options.dup
       fu_log "rename #{src} #{dst}" if opts.delete(:verbose)
       client.rename(src, dst, opts)
@@ -294,15 +294,15 @@ module WebHDFS
     #   FileUtils.chmod 0755, 'dir'
     #   FileUtils.chmod 0644, 'file'
     #
-    def chmod(mode, list, options={})
+    def chmod(mode, list, options = {})
       opts = options.dup
       list = [list].flatten
-      fu_log sprintf('chmod %o %s', mode, list.join(' ')) if opts.delete(:verbose)
+      fu_log format('chmod %o %s', mode, list.join(' ')) if opts.delete(:verbose)
       mode = ('%03o' % mode) if mode.is_a? Integer
       c = client
-      list.each { |entry|
+      list.each do |entry|
         c.chmod(entry, mode, opts)
-      }
+      end
     end
     module_function :chmod
 
@@ -318,16 +318,16 @@ module WebHDFS
     #   FileUtils.chmod 0755, 'dir'
     #   FileUtils.chmod 0644, 'file'
     #
-    def chown(user, group, list, options={})
+    def chown(user, group, list, options = {})
       opts = options.dup
       list = [list].flatten
       fu_log sprintf('chown %s%s',
-                     [user,group].compact.join(':') + ' ',
+                     [user, group].compact.join(':') + ' ',
                      list.join(' ')) if opts.delete(:verbose)
       c = client
-      list.each { |entry|
-        c.chown(entry, {:owner => user, :group => group})
-      }
+      list.each do |entry|
+        c.chown(entry, { owner: user, group: group })
+      end
     end
     module_function :chown
 
@@ -341,15 +341,15 @@ module WebHDFS
     #
     #   FileUtils.set_repl_factor 'file', 3
     #
-    def set_repl_factor(list, num, options={})
+    def set_repl_factor(list, num, options = {})
       opts = options.dup
       list = [list].flatten
       fu_log sprintf('set_repl_factor %s %d',
                      list.join(' '), num) if opts.delete(:verbose)
       c = client
-      list.each { |entry|
+      list.each do |entry|
         c.replication(entry, num, opts)
-      }
+      end
     end
     module_function :set_repl_factor
 
@@ -363,15 +363,15 @@ module WebHDFS
     #
     #   FileUtils.set_atime 'file', Time.now
     #
-    def set_atime(list, time, options={})
+    def set_atime(list, time, options = {})
       opts = options.dup
       list = [list].flatten
       time = time.to_i
       fu_log sprintf('set_atime %s %d', list.join(' '), time) if opts.delete(:verbose)
       c = client
-      list.each { |entry|
-        c.touch(entry, {:accesstime => time})
-      }
+      list.each do |entry|
+        c.touch(entry, accesstime: time)
+      end
     end
     module_function :set_atime
 
@@ -385,15 +385,15 @@ module WebHDFS
     #
     #   FileUtils.set_mtime 'file', Time.now
     #
-    def set_mtime(list, time, options={})
+    def set_mtime(list, time, options = {})
       opts = options.dup
       list = [list].flatten
       time = time.to_i
       fu_log sprintf('set_mtime %s %d', list.join(' '), time) if opts.delete(:verbose)
       c = client
-      list.each { |entry|
-        c.touch(entry, {:modificationtime => time})
-      }
+      list.each do |entry|
+        c.touch(entry, modificationtime: time)
+      end
     end
     module_function :set_mtime
 
@@ -408,7 +408,7 @@ module WebHDFS
     # Internal: Logging
     def fu_log(msg)
       @fileutils_output ||= $stderr
-      @fileutils_label  ||= ''
+      @fileutils_label ||= ''
       @fileutils_output.puts @fileutils_label + msg
     end
     private_module_function :fu_log
@@ -416,9 +416,7 @@ module WebHDFS
     # Internal
     def client
       client = WebHDFS::Client.new(@fu_host, @fu_port, @fu_user, @fu_doas, @fu_paddr, @fu_pport)
-      if @fu_httpfs_mode
-        client.httpfs_mode = true
-      end
+      client.httpfs_mode = true if @fu_httpfs_mode
       client.ssl = true if @fu_ssl
       client.ssl_ca_file = @fu_ssl_ca_file if @fu_ssl_ca_file
       client.ssl_verify_mode = @fu_ssl_verify_mode if @fu_ssl_verify_mode
