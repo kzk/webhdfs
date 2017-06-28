@@ -92,6 +92,8 @@ module WebHDFS
 
     # Public: Set private key
     #
+    # Copyright (C) 2017 - Akamai Technologies, Inc
+    #
     # Examples
     #
     #   FileUtils.set_ssl_key(OpenSSL::PKey::RSA.new(open('/path/to/key.pem')))
@@ -102,6 +104,8 @@ module WebHDFS
     module_function :set_ssl_key
 
     # Public: Set private cert
+    #
+    # Copyright (C) 2017 - Akamai Technologies, Inc
     #
     # Examples
     #
