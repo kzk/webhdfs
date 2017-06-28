@@ -11,6 +11,8 @@ module WebHDFS
     @fu_ssl = false
     @fu_ssl_ca_file = nil
     @fu_ssl_verify_mode = nil
+    @fu_ssl_key = nil
+    @fu_ssl_cert = nil
     @fu_kerberos = false
 
     # Public: Set hostname and port number of WebHDFS
@@ -87,6 +89,32 @@ module WebHDFS
       @fu_ssl_verify_mode = mode
     end
     module_function :set_ssl_verify_mode
+
+    # Public: Set private key
+    #
+    # Copyright (C) 2017 - Akamai Technologies, Inc
+    #
+    # Examples
+    #
+    #   FileUtils.set_ssl_key(OpenSSL::PKey::RSA.new(open('/path/to/key.pem')))
+    #
+    def set_ssl_key(key)
+      @fu_ssl_key = key
+    end
+    module_function :set_ssl_key
+
+    # Public: Set private cert
+    #
+    # Copyright (C) 2017 - Akamai Technologies, Inc
+    #
+    # Examples
+    #
+    #   FileUtils.set_ssl_cert(OpenSSL::X509::Certificate.new(open('/path/to/cert.pem')))
+    #
+    def set_ssl_cert(cert)
+      @fu_ssl_cert = cert
+    end
+    module_function :set_ssl_cert
 
     # Public: Set kerberos authentication enable/disable
     #
@@ -422,6 +450,8 @@ module WebHDFS
       client.ssl = true if @fu_ssl
       client.ssl_ca_file = @fu_ssl_ca_file if @fu_ssl_ca_file
       client.ssl_verify_mode = @fu_ssl_verify_mode if @fu_ssl_verify_mode
+      client.ssl_key = @fu_ssl_key if @fu_ssl_key
+      client.ssl_cert = @fu_ssl_cert if @fu_ssl_cert
       client.kerberos = true if @fu_kerberos
       client
     end
