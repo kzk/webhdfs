@@ -3,10 +3,10 @@ Bundler::GemHelper.install_tasks
 
 require 'rake/testtask'
 
-Rake::TestTask.new(:test) do |test|
-  test.libs << 'lib' << 'test'
-  test.test_files = FileList['test/webhdfs/*.rb']
-  test.verbose = true
+Rake::TestTask.new(:test) do |t|
+  t.libs << 'test' << '.'
+  t.test_files = FileList['test/webhdfs/*.rb']
+  t.verbose = true
 end
 
 task :doc do |t|
