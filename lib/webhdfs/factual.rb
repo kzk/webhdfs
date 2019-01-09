@@ -136,7 +136,8 @@ module WebHDFS
 
       def rm_r(path)
         rm_r!(path)
-      rescue NeutronicHelper::FileNotFoundError
+      # rescue NeutronicHelper::FileNotFoundError
+      rescue WebHDFS::FileNotFoundError
         nil
       end
 
@@ -144,8 +145,9 @@ module WebHDFS
         smart_retry do
           begin
             @client.stat(path)
-          rescue WebHDFS::FileNotFoundError
-            raise NeutronicHelper::FileNotFoundError.new("File #{path} not found")
+          rescue WebHDFS::FileNotFoundError => e
+            # raise NeutronicHelper::FileNotFoundError, "File #{path} not found"
+            raise WebHDFS::FileNotFoundError, "File #{path} not found", e.backtrace
           end
           @client.delete(path, recursive: true)
         end
@@ -193,8 +195,9 @@ module WebHDFS
         smart_retry do
           begin
             modification_time = @client.stat(path)['modificationTime']
-          rescue WebHDFS::FileNotFoundError
-            raise NeutronicHelper::FileNotFoundError.new("File #{path} not found")
+          rescue WebHDFS::FileNotFoundError => e
+            # raise NeutronicHelper::FileNotFoundError, "File #{path} not found"
+            raise WebHDFS::FileNotFoundError, "File #{path} not found", e.backtrace
           end
           Time.at(modification_time / 1000)
         end
@@ -238,7 +241,8 @@ module WebHDFS
           message = e2.message
         end
         if message =~ /not found/
-          raise NeutronicHelper::FileNotFoundError, message, e.backtrace
+          # raise NeutronicHelper::FileNotFoundError, message, e.backtrace
+          raise WebHDFS::FileNotFoundError, message, e.backtrace
         else
           raise InvalidOpError, message, e.backtrace
         end
