@@ -63,9 +63,9 @@ module WebHDFS
     end
 
     class InnerClient
-      def self.setup
+      def self.setup(api = 'localhost', default_namenode = 'localhost')
         return false unless keytab_path_set?
-        client = initialize_client
+        client = initialize_client(api, default_namenode)
         return false unless client_working?(client)
         client
       end
@@ -79,15 +79,15 @@ module WebHDFS
         end
       end
 
-      def self.initialize_client
-        client = WebHDFS::Client.new(detect_namenode)
+      def self.initialize_client(api, default_namenode)
+        client = WebHDFS::Client.new(detect_namenode(api, default_namenode))
         client.kerberos = true
         client.kerberos_keytab = ENV['KEYTAB_PATH']
         client
       end
 
-      def self.detect_namenode
-        api = APIConnection.new(CONFIG.hdfs_dev_api)
+      def self.detect_namenode(api, default_namenode)
+        api = APIConnection.new(api)
         path = 'jmx?qry=Hadoop:service=NameNode,name=NameNodeStatus'
         res = api.get(path)
         p res
@@ -96,8 +96,8 @@ module WebHDFS
         namenode
       rescue StandardError => e
         LOGGER.warn("Failed to detect namenode with error: #{e}")
-        LOGGER.warn("Defaulting to #{CONFIG.default_hdfs_namenode}")
-        CONFIG.default_hdfs_namenode
+        LOGGER.warn("Defaulting to #{default_namenode}")
+        default_namenode
       end
 
       def self.client_working?(client)
@@ -113,8 +113,8 @@ module WebHDFS
     end
 
     class Client
-      def initialize
-        @client = InnerClient.setup
+      def initialize(api, default_namenode)
+        @client = InnerClient.setup(api, default_namenode)
       end
 
       def append(path, data)
@@ -204,7 +204,7 @@ module WebHDFS
         if specific_exception == 'StandbyException'
           LOGGER.error("HDFS namenode in standby. Sleeping for 10 seconds and then attempting to reconnect.")
           Kernel.sleep 10
-          @client = InnerClient.setup
+          @client = InnerClient.setup(api, default_namenode)
           block.call
         elsif message =~ /^Cannot obtain block length/
           LOGGER.error(e.message)
@@ -219,7 +219,7 @@ module WebHDFS
         block.call
       rescue WebHDFS::KerberosError => e
         LOGGER.error("Kerberos credentials expired, refreshing them.")
-        @client = InnerClient.setup
+        @client = InnerClient.setup(api, default_namenode)
         block.call
       end
 
