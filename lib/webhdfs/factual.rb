@@ -56,7 +56,7 @@ module WebHDFS
       def parse_response(res)
         begin
           JSON.parse(res.body)
-        rescue JSON::ParserError => e
+        rescue JSON::ParserError
           res.body
         end
       end
@@ -122,7 +122,7 @@ module WebHDFS
           begin
             @client.stat(path)
             @client.append(path, data + "\n")
-          rescue WebHDFS::FileNotFoundError => e
+          rescue WebHDFS::FileNotFoundError
             @client.create(path, data + "\n")
           end
         end
@@ -130,7 +130,7 @@ module WebHDFS
 
       def rm_r(path)
         rm_r!(path)
-      rescue NeutronicHelper::FileNotFoundError => e
+      rescue NeutronicHelper::FileNotFoundError
         nil
       end
 
@@ -138,7 +138,7 @@ module WebHDFS
         smart_retry do
           begin
             @client.stat(path)
-          rescue WebHDFS::FileNotFoundError => e
+          rescue WebHDFS::FileNotFoundError
             raise NeutronicHelper::FileNotFoundError.new("File #{path} not found")
           end
           @client.delete(path, recursive: true)
@@ -187,7 +187,7 @@ module WebHDFS
         smart_retry do
           begin
             modification_time = @client.stat(path)['modificationTime']
-          rescue WebHDFS::FileNotFoundError => e
+          rescue WebHDFS::FileNotFoundError
             raise NeutronicHelper::FileNotFoundError.new("File #{path} not found")
           end
           Time.at(modification_time / 1000)
