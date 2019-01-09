@@ -237,8 +237,8 @@ module WebHDFS
       rescue WebHDFS::FileNotFoundError => e
         begin
           message = JSON.parse(e.message)["RemoteException"]["message"]
-        rescue StandardError => e2
-          message = e2.message
+        rescue StandardError
+          message = e.message
         end
         if message =~ /not found/
           # raise NeutronicHelper::FileNotFoundError, message, e.backtrace
