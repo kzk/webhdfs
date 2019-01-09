@@ -2,9 +2,15 @@ require_relative '../webhdfs/client'
 
 module WebHDFS
   module Factual
-    class LOGGER
+    class NullLogger
       def self.method_missing(m, *args, &block)
       end
+    end
+
+    class << self
+      attr_accessor :logger
+
+      logger = NullLogger
     end
 
     class APIConnection
@@ -15,7 +21,7 @@ module WebHDFS
 
       def connection
         @conn ||= Faraday.new(@host, headers: @headers) do |builder|
-          builder.response :logger, LOGGER
+          builder.response :logger, WebHDFS::Factual::logger
           builder.use Faraday::Adapter::NetHttp
         end
       end
@@ -72,7 +78,7 @@ module WebHDFS
 
       def self.keytab_path_set?
         if ENV['KEYTAB_PATH'].nil? || ENV['KEYTAB_PATH'].empty?
-          LOGGER.info("KEYTAB_PATH not set.")
+          WebHDFS::Factual::logger.info("KEYTAB_PATH not set.")
           false
         else
           true
@@ -95,8 +101,8 @@ module WebHDFS
         p namenode
         namenode
       rescue StandardError => e
-        LOGGER.warn("Failed to detect namenode with error: #{e}")
-        LOGGER.warn("Defaulting to #{default_namenode}")
+        WebHDFS::Factual::logger.warn("Failed to detect namenode with error: #{e}")
+        WebHDFS::Factual::logger.warn("Defaulting to #{default_namenode}")
         default_namenode
       end
 
@@ -104,9 +110,9 @@ module WebHDFS
         res = client.stat('/')
         !!res
       rescue StandardError => e
-        LOGGER.error("Failed to access HDFS with error #{$!}")
+        WebHDFS::Factual::logger.error("Failed to access HDFS with error #{$!}")
         if e.is_a?(NameError) && e.message =~ /undefined local variable or method `min_stat'/
-          LOGGER.info("Do you have a valid keytab file at #{ENV['KEYTAB_PATH']}?")
+          WebHDFS::Factual::logger.info("Do you have a valid keytab file at #{ENV['KEYTAB_PATH']}?")
         end
         raise e
       end
@@ -202,23 +208,23 @@ module WebHDFS
         specific_exception = JSON.parse(e.message)['RemoteException']['exception'] rescue nil
         message = JSON.parse(e.message)['RemoteException']['message'] rescue nil
         if specific_exception == 'StandbyException'
-          LOGGER.error("HDFS namenode in standby. Sleeping for 10 seconds and then attempting to reconnect.")
+          WebHDFS::Factual::logger.error("HDFS namenode in standby. Sleeping for 10 seconds and then attempting to reconnect.")
           Kernel.sleep 10
           @client = InnerClient.setup(api, default_namenode)
           block.call
         elsif message =~ /^Cannot obtain block length/
-          LOGGER.error(e.message)
+          WebHDFS::Factual::logger.error(e.message)
           Kernel.sleep 5
           block.call
         else
           raise
         end
       rescue WebHDFS::ServerError => e
-        LOGGER.error(e.message)
+        WebHDFS::Factual::logger.error(e.message)
         Kernel.sleep 15
         block.call
       rescue WebHDFS::KerberosError => e
-        LOGGER.error("Kerberos credentials expired, refreshing them.")
+        WebHDFS::Factual::logger.error("Kerberos credentials expired, refreshing them.")
         @client = InnerClient.setup(api, default_namenode)
         block.call
       end
