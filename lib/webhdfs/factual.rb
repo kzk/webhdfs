@@ -1,6 +1,5 @@
 require_relative '../webhdfs/client'
 
-
 module WebHDFS
   module Factual
     class LOGGER
