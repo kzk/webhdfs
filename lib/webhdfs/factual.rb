@@ -4,9 +4,7 @@ require_relative '../webhdfs/client'
 module WebHDFS
   module Factual
     class LOGGER
-      class << self
-        def method_missing(m, *args, &block)
-        end
+      def self.method_missing(m, *args, &block)
       end
     end
 
