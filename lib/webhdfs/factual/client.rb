@@ -2,7 +2,13 @@ module WebHDFS
   module Factual
     class Client
       def initialize(api, default_namenode)
-        @client = InnerClient.setup(api, default_namenode)
+        @api = api
+        @default_namenode = default_namenode
+        @client = get_client
+      end
+
+      def get_client
+        InnerClient.setup(@api, @default_namenode)
       end
 
       def append(path, data)
@@ -95,7 +101,7 @@ module WebHDFS
         if specific_exception == 'StandbyException'
           WebHDFS::Factual::logger.error("HDFS namenode in standby. Sleeping for 10 seconds and then attempting to reconnect.")
           Kernel.sleep 10
-          @client = InnerClient.setup(api, default_namenode)
+          @client = get_client
           block.call
         elsif message =~ /^Cannot obtain block length/
           WebHDFS::Factual::logger.error(e.message)
@@ -110,7 +116,7 @@ module WebHDFS
         block.call
       rescue WebHDFS::KerberosError => e
         WebHDFS::Factual::logger.error("Kerberos credentials expired, refreshing them.")
-        @client = InnerClient.setup(api, default_namenode)
+        @client = get_client
         block.call
       end
 
