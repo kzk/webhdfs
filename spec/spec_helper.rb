@@ -1,5 +1,4 @@
 require 'webmock/rspec'
-# WebMock.disable_net_connect!(allow: [/\/hdfs-dev\./, /\/webhdfs\//, /\/localhost\//])
 WebMock.disable_net_connect!(allow: [/\/localhost/, /\/hdfs-dev\./, /\/webhdfs\//])
 
 API_HOST = ENV['API_HOST'] || 'http://localhost'
