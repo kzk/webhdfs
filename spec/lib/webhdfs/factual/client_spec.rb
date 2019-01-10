@@ -11,7 +11,7 @@ end
 
 describe Client do
   # FIXME: Migrate shared examples
-  # it_behaves_like 'a target filesystem interface'
+  it_behaves_like 'a target filesystem interface'
   # it_behaves_like 'a target filesystem implementation'
 
   context 'when hdfs namenode has changed' do
