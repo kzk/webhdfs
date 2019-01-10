@@ -37,23 +37,21 @@ describe Client do
   end
 
   it 'retries when a "Cannot obtain block length" error occurs' do
-    # FIXME
-    skip
+    client = get_client
     allow(Kernel).to receive(:sleep).and_return(true)
-    expect(get_client.instance_eval{@client}).to receive(:list).and_raise(WebHDFS::IOError.new('{"RemoteException":{"exception":"IOException","javaClassName":"java.io.IOException","message":"Cannot obtain block length for L"}}')).twice
+    expect(client.instance_eval{@client}).to receive(:list).and_raise(WebHDFS::IOError.new('{"RemoteException":{"exception":"IOException","javaClassName":"java.io.IOException","message":"Cannot obtain block length for L"}}')).twice
     begin
-      get_client.ls('/')
+      client.ls('/')
     rescue WebHDFS::IOError
     end
   end
 
   it 'retries when a ServerError occurs' do
-    # FIXME
-    skip
+    client = get_client
     allow(Kernel).to receive(:sleep).and_return(true)
-    expect(get_client.instance_eval{@client}).to receive(:list).and_raise(WebHDFS::ServerError.new('Failed to connect to host d495.la.prod.factual.com:1006, execution expired')).twice
+    expect(client.instance_eval{@client}).to receive(:list).and_raise(WebHDFS::ServerError.new('Failed to connect to host d495.la.prod.factual.com:1006, execution expired')).twice
     begin
-      get_client.ls('/')
+      client.ls('/')
     rescue WebHDFS::ServerError
     end
   end
