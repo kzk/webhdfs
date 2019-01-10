@@ -4,6 +4,16 @@ $LOAD_PATH.unshift(File.dirname(__FILE__))
 require 'rubygems'
 require 'rr'
 require 'test/unit'
+
+# FIXME: DRY
+API_HOST = ENV['API_HOST'] || 'http://localhost'
+DEFAULT_NAMENODE = ENV['DEFAULT_NAMENODE'] || 'localhost'
+TEST_DIR = ENV['TEST_DIR']
+
+if TEST_DIR.nil? || TEST_DIR.empty?
+  raise "Must explicitly set a TEST_DIR to run tests within"
+end
+
 class Test::Unit::TestCase
   include RR::Adapters::TestUnit
 end
