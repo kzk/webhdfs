@@ -2,9 +2,6 @@ require_relative '../../../../lib/webhdfs/factual'
 
 include WebHDFS::Factual
 
-API_HOST = 'http://localhost'
-DEFAULT_NAMENODE = 'default'
-
 describe InnerClient do
   describe '#detect_namenode' do
     it 'returns the correct namenode' do

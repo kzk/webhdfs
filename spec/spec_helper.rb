@@ -1,6 +1,9 @@
 require 'webmock/rspec'
 # WebMock.disable_net_connect!(allow: [/\/hdfs-dev\./, /\/webhdfs\//, /\/localhost\//])
-WebMock.disable_net_connect!(allow: [/\/localhost/])
+WebMock.disable_net_connect!(allow: [/\/localhost/, /\/hdfs-dev\./, /\/webhdfs\//])
+
+API_HOST = ENV['API_HOST'] || 'http://localhost'
+DEFAULT_NAMENODE = ENV['DEFAULT_NAMENODE'] || 'localhost'
 
 def fixture_path
   File.expand_path("./spec/fixtures")
