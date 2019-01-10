@@ -19,6 +19,9 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "simplecov"
   gem.add_development_dependency "rr"
   gem.add_development_dependency "test-unit"
+  gem.add_development_dependency "rspec"
+  gem.add_development_dependency "webmock"
+
   gem.add_runtime_dependency "addressable"
   gem.add_runtime_dependency "faraday"
 end
