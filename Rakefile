@@ -3,13 +3,13 @@ Bundler::GemHelper.install_tasks
 
 require 'rake/testtask'
 
-test_unit = Rake::TestTask.new(:test_unit) do |t|
+Rake::TestTask.new(:test_unit) do |t|
   t.libs << 'test' << '.'
   t.test_files = FileList['test/webhdfs/*.rb']
   t.verbose = true
 end
 
-spec = begin
+begin
   require 'rspec/core/rake_task'
   RSpec::Core::RakeTask.new(:spec) do |t, task_args|
     t.rspec_opts = "-r ./spec/spec_helper.rb"
