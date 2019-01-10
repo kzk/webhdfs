@@ -28,9 +28,7 @@ module WebHDFS
         api = WebHDFS::Factual::APIConnection.new(api)
         path = 'jmx?qry=Hadoop:service=NameNode,name=NameNodeStatus'
         res = api.get(path)
-        p res
         namenode = res['beans'].first['HostAndPort'].split(':').first
-        p namenode
         namenode
       rescue StandardError => e
         WebHDFS::Factual.logger.warn("Failed to detect namenode with error: #{e}")

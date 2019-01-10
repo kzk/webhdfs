@@ -296,9 +296,6 @@ module WebHDFS
                      else
                        path
                      end
-      p host
-      p port
-      p request_path
       if @ssl
         conn.use_ssl = true
         conn.ca_file = @ssl_ca_file if @ssl_ca_file
@@ -318,7 +315,6 @@ module WebHDFS
       if @kerberos
         require 'base64'
         require 'gssapi'
-        puts "Authenticating #{@host}"
         gsscli = GSSAPI::Simple.new(@host, 'HTTP', @kerberos_keytab)
         token = nil
         begin
@@ -326,7 +322,6 @@ module WebHDFS
         rescue => e
           raise WebHDFS::KerberosError, e.message
         end
-        puts "Authorization: #{Base64.strict_encode64(token)}"
         if header
           header['Authorization'] = "Negotiate #{Base64.strict_encode64(token)}"
         else
