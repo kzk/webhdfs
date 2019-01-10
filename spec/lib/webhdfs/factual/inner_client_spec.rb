@@ -6,7 +6,7 @@ describe InnerClient do
   describe '#detect_namenode' do
     it 'returns the correct namenode' do
       stub_request(:get, /localhost/).to_return(body: fixture('namenode_status.json'))
-      expect(described_class.detect_namenode(API_HOST, DEFAULT_NAMENODE)).to eq('localhost')
+      expect(described_class.detect_namenode(API_HOST, DEFAULT_NAMENODE)).to eq(DEFAULT_NAMENODE)
     end
 
     it 'returns the default namenode when request fails' do
