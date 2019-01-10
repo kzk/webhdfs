@@ -2,7 +2,6 @@ $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 
 require 'rubygems'
-require 'rr'
 require 'test/unit'
 
 # FIXME: DRY
@@ -12,10 +11,6 @@ TEST_DIR = ENV['TEST_DIR']
 
 if TEST_DIR.nil? || TEST_DIR.empty?
   raise "Must explicitly set a TEST_DIR to run tests within"
-end
-
-class Test::Unit::TestCase
-  include RR::Adapters::TestUnit
 end
 
 if ENV['SIMPLE_COV']
