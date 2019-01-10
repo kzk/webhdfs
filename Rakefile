@@ -12,7 +12,7 @@ end
 begin
   require 'rspec/core/rake_task'
   RSpec::Core::RakeTask.new(:spec) do |t, task_args|
-    t.rspec_opts = "-r ./spec/spec_helper.rb"
+    t.rspec_opts = "-r ./spec/spec_helper.rb -f d"
   end
 rescue LoadError
 end
