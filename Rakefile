@@ -6,7 +6,8 @@ require 'rake/testtask'
 Rake::TestTask.new(:test_unit) do |t|
   t.libs << 'test' << '.'
   t.test_files = FileList['test/webhdfs/*.rb']
-  t.verbose = true
+  t.verbose = false
+  t.warning = false
 end
 
 begin
