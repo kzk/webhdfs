@@ -99,23 +99,23 @@ module WebHDFS
         specific_exception = JSON.parse(e.message)['RemoteException']['exception'] rescue nil
         message = JSON.parse(e.message)['RemoteException']['message'] rescue nil
         if specific_exception == 'StandbyException'
-          WebHDFS::Factual::logger.error("HDFS namenode in standby. Sleeping for 10 seconds and then attempting to reconnect.")
+          WebHDFS::Factual.logger.error("HDFS namenode in standby. Sleeping for 10 seconds and then attempting to reconnect.")
           Kernel.sleep 10
           @client = get_client
           block.call
         elsif message =~ /^Cannot obtain block length/
-          WebHDFS::Factual::logger.error(e.message)
+          WebHDFS::Factual.logger.error(e.message)
           Kernel.sleep 5
           block.call
         else
           raise
         end
       rescue WebHDFS::ServerError => e
-        WebHDFS::Factual::logger.error(e.message)
+        WebHDFS::Factual.logger.error(e.message)
         Kernel.sleep 15
         block.call
       rescue WebHDFS::KerberosError => e
-        WebHDFS::Factual::logger.error("Kerberos credentials expired, refreshing them.")
+        WebHDFS::Factual.logger.error("Kerberos credentials expired, refreshing them.")
         @client = get_client
         block.call
       end

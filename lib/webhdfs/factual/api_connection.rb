@@ -10,7 +10,7 @@ module WebHDFS
 
       def connection
         @conn ||= Faraday.new(@host, headers: @headers) do |builder|
-          builder.response :logger, WebHDFS::Factual::logger
+          builder.response :logger, WebHDFS::Factual.logger
           builder.use Faraday::Adapter::NetHttp
         end
       end
