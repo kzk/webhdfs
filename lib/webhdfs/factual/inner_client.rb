@@ -1,6 +1,7 @@
 module WebHDFS
   module Factual
     class InnerClient
+      # FIXME: This should either not return false ever or should be handled
       def self.setup(api = 'localhost', default_namenode = 'localhost')
         return false unless keytab_path_set?
         client = initialize_client(api, default_namenode)
