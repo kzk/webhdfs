@@ -116,10 +116,34 @@ Note that openssl libraries must be available:
     client.ssl_key = OpenSSL::PKey::RSA.new(open('/path/to/key.pem'))
     client.ssl_cert = OpenSSL::X509::Certificate.new(open('/path/to/cert.pem'))
 
+## Tests
+
+Tests expect these environment variables:
+
+| Variable | Purpose |
+| :------- | :------ |
+| `API_HOST` | The JMX API hostname |
+| `DEFAULT_NAMENODE` | The default namenode hostname |
+| `TEST_DIR` | The path scope of where tests will be run |
+| `KERBEROS` | Whether kerberos authentication is required |
+| `KEYTAB_PATH` | The path to the keytab |
+
+For example:
+
+```
+$ KERBEROS=true \
+  API_HOST='http://jmx.site.com' \
+  DEFAULT_NAMENODE='hdfs.namenode.com' \
+  KEYTAB_PATH=~/someone.keytab \
+  TEST_DIR=/user/someone/test_dir/ \
+  bundle exec rake test
+```
+
 ## AUTHORS
 
 * Kazuki Ohta <kazuki.ohta@gmail.com>
 * TAGOMORI Satoshi <tagomoris@gmail.com>
+* Jorge Israel Peña <jorge@factual.com>
 
 ## LICENSE
 
