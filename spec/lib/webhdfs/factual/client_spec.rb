@@ -2,15 +2,13 @@ require_relative '../../../../lib/webhdfs/factual'
 
 include WebHDFS::Factual
 
-# FIXME: Migrate shared examples
-# require_relative 'shared_examples/target_fs_examples'
+require_relative '../../../shared_examples/target_fs_examples'
 
 def get_client
   Client.new(API_HOST, DEFAULT_NAMENODE)
 end
 
 describe Client do
-  # FIXME: Migrate shared examples
   it_behaves_like 'a target filesystem interface'
   it_behaves_like 'a target filesystem implementation'
 

@@ -17,5 +17,3 @@ end
 def fixture(file)
   File.new(fixture_path + '/' + file)
 end
-
-Dir["./spec/shared_examples/**/*.rb"].sort.each { |f| require f }
