@@ -11,6 +11,5 @@ module WebHDFS
 end
 
 require_relative '../webhdfs/client'
-require_relative './factual/error'
 require_relative './factual/api_connection'
 require_relative './factual/client'

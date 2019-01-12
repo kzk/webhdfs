@@ -16,13 +16,13 @@ describe APIConnection do
       it 'raises an exception' do
         expect {
           api.instance_eval{ get('status/404') }
-        }.to raise_error(RequestError)
+        }.to raise_error(WebHDFS::RequestError)
       end
 
       it 'the exception message includes response status, url, and method' do
         begin
           api.instance_eval{ get('status/404') }
-        rescue RequestError => e
+        rescue WebHDFS::RequestError => e
           expect(e.message).to match /GET/i
           expect(e.message).to match /404/
           expect(e.message).to match /http:/
@@ -32,7 +32,7 @@ describe APIConnection do
       it 'the exception metadata includes the response body and headers' do
         begin
           api.instance_eval{ get('status/404') }
-        rescue RequestError => e
+        rescue WebHDFS::RequestError => e
           expect(e.metadata[:body]).to match /not found/
           expect(e.metadata[:headers].keys).to include 'cats'
         end
