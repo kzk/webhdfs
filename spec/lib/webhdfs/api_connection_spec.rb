@@ -1,6 +1,6 @@
-require_relative '../../../../lib/webhdfs/factual'
+require_relative '../../../lib/webhdfs'
 
-include WebHDFS::Factual
+include WebHDFS
 
 describe APIConnection do
 

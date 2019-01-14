@@ -5,14 +5,14 @@ shared_examples 'a target filesystem interface' do
   subject{described_class.new(API_HOST, DEFAULT_NAMENODE)}
 
   %w(
-    append
-    rm_r
-    ls
-    mkdir
-    mv
-    read
-    tip_of_tail
-    mtime
+    _append
+    _rm_r
+    _ls
+    _mkdir
+    _mv
+    _read
+    _tip_of_tail
+    _mtime
   ).each do |method|
     it { is_expected.to respond_to(method) }
   end
@@ -30,9 +30,9 @@ shared_examples 'a target filesystem implementation' do
     it 'lists files' do
       files = %w(a b)
       files.each do |letter|
-        subject.append(File.join(path, letter), letter)
+        subject._append(File.join(path, letter), letter)
       end
-      expect(subject.ls(path)).to eq files
+      expect(subject._ls(path)).to eq files
     end
   end
 
@@ -40,7 +40,7 @@ shared_examples 'a target filesystem implementation' do
 
     it 'creates the file if it does not exist' do
       expect {
-        subject.append(filepath, 'IMPORTING')
+        subject._append(filepath, 'IMPORTING')
       }.not_to raise_error
     end
   end
@@ -48,30 +48,30 @@ shared_examples 'a target filesystem implementation' do
   describe '#tip_of_tail' do
 
     it 'returns the last line appended to the file' do
-      subject.append(filepath, 'IMPORTING')
-      subject.append(filepath, 'QAING')
-      expect(subject.tip_of_tail(filepath)).to eq 'QAING'
+      subject._append(filepath, 'IMPORTING')
+      subject._append(filepath, 'QAING')
+      expect(subject._tip_of_tail(filepath)).to eq 'QAING'
     end
 
     it 'returns an empty string when file is empty' do
-      subject.append(filepath, '')
-      expect(subject.tip_of_tail(filepath)).to eq ''
+      subject._append(filepath, '')
+      expect(subject._tip_of_tail(filepath)).to eq ''
     end
 
     it 'raises an exception when file not found' do
       expect {
-        subject.tip_of_tail(filepath)
+        subject._tip_of_tail(filepath)
       }.to raise_error(WebHDFS::FileNotFoundError, /not found/)
     end
   end
 
   describe '#rm_r' do
     it 'deletes the file or directory' do
-      subject.append(filepath, 'IMPORTING')
+      subject._append(filepath, 'IMPORTING')
       expect {
-        subject.rm_r(filepath)
+        subject._rm_r(filepath)
       }.to change {
-        subject.ls(File.dirname(filepath)).size
+        subject._ls(File.dirname(filepath)).size
       }.by(-1)
     end
   end
@@ -79,21 +79,21 @@ shared_examples 'a target filesystem implementation' do
   describe '#rm_r!' do
     it 'raises an exception when file not found' do
       expect {
-        subject.rm_r!(filepath)
+        subject._rm_r!(filepath)
       }.to raise_error(WebHDFS::FileNotFoundError, /not found/)
     end
   end
 
   describe '#read' do
     it 'returns the entire file' do
-      subject.append(filepath, 'IMPORTING')
-      subject.append(filepath, 'QAING')
-      expect(subject.read(filepath)).to eq "IMPORTING\nQAING\n"
+      subject._append(filepath, 'IMPORTING')
+      subject._append(filepath, 'QAING')
+      expect(subject._read(filepath)).to eq "IMPORTING\nQAING\n"
     end
 
     it 'raises an exception when file not found' do
       expect {
-        subject.read(filepath)
+        subject._read(filepath)
       }.to raise_error(WebHDFS::FileNotFoundError, /not found/)
     end
   end
@@ -101,14 +101,14 @@ shared_examples 'a target filesystem implementation' do
   describe '#mtime' do
     it 'returns the modification time for the file' do
       before = Time.now - 1
-      subject.append(filepath, 'IMPORTING')
-      expect(subject.mtime(filepath)).to be > before
-      expect(subject.mtime(filepath)).to be <= Time.now
+      subject._append(filepath, 'IMPORTING')
+      expect(subject._mtime(filepath)).to be > before
+      expect(subject._mtime(filepath)).to be <= Time.now
     end
 
     it 'raises an exception when file is not found' do
       expect {
-        subject.mtime(filepath)
+        subject._mtime(filepath)
       }.to raise_error(WebHDFS::FileNotFoundError, /not found/)
     end
   end

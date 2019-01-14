@@ -5,10 +5,10 @@ shared_examples 'dir setup' do
   end
 
   before :each do
-    get_client.mkdir(path)
+    get_client._mkdir(path)
   end
 
   after :each do
-    get_client.rm_r(path)
+    get_client._rm_r(path)
   end
 end
