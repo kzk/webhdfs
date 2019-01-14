@@ -11,6 +11,7 @@ module WebHDFS
     # This hash table holds command options.
     OPT_TABLE = {} # internal use only
     KNOWN_ERRORS = ['LeaseExpiredException'].freeze
+    DEFAULT_PORT = 50070
 
     attr_accessor :host, :port, :username, :doas, :proxy_address, :proxy_port
     attr_accessor :proxy_user, :proxy_pass
@@ -28,6 +29,7 @@ module WebHDFS
     attr_accessor :ssl_version
     attr_accessor :kerberos, :kerberos_keytab
     attr_accessor :http_headers
+    attr_accessor :jmx_host
 
     SSL_VERIFY_MODES = [:none, :peer]
     def ssl_verify_mode=(mode)
@@ -44,6 +46,9 @@ module WebHDFS
       @doas = doas
       @proxy_address = proxy_address
       @proxy_port = proxy_port
+
+      @jmx_host = nil
+
       @retry_known_errors = false
       @retry_times = 1
       @retry_interval = 1
@@ -60,6 +65,57 @@ module WebHDFS
       @kerberos = false
       @kerberos_keytab = nil
       @http_headers = http_headers
+
+      if block_given?
+        Proc.new.call(self)
+      end
+    end
+
+    def keytab_path_set?
+      if @kerberos_keytab.nil? || @kerberos_keytab.empty?
+        WebHDFS::Factual.logger.fatal("The kerberos keytab is not set")
+        false
+      else
+        true
+      end
+    end
+
+    def ensure_keytab_path_set
+      raise WebHDFS::KerberosError, "The kerberos keytab must be set" unless keytab_path_set?
+    end
+
+    def operational?
+      res = stat('/')
+      !!res
+    rescue StandardError => e
+      WebHDFS::Factual.logger.error("Failed to access HDFS with error #{$!}")
+      if e.is_a?(NameError) && e.message =~ /undefined local variable or method `min_stat'/
+        WebHDFS::Factual.logger.info("Do you have a valid keytab file at #{@kerberos_keytab}?")
+      end
+      raise e
+    end
+
+    def ensure_operational
+      raise WebHDFS::Error, "The client isn't working" unless operational?
+    end
+
+    def get_namenode_from_jmx
+      if @jmx_host.nil? || @jmx_host.empty?
+        raise WebHDFS::JMXError, "JMX host is not set"
+      end
+
+      conn = WebHDFS::Factual::APIConnection.new(@jmx_host)
+      path = 'jmx?qry=Hadoop:service=NameNode,name=NameNodeStatus'
+      res = conn.get(path)
+
+      res['beans'].first['HostAndPort'].split(':').first
+    end
+
+    def set_namenode_from_jmx
+      @host = get_namenode_from_jmx
+    rescue StandardError => e
+      WebHDFS::Factual.logger.warn("Failed to detect namenode with error: #{e}")
+      WebHDFS::Factual.logger.warn("Remaining on #{@host}")
     end
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATE
