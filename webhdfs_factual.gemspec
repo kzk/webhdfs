@@ -10,7 +10,7 @@ Gem::Specification.new do |gem|
   gem.authors     = ["Kazuki Ohta", "Satoshi Tagomori", "Jorge Israel Peña"]
   gem.email       = ["kazuki.ohta@gmail.com", "tagomoris@gmail.com", "jorge@factual.com"]
   gem.has_rdoc    = false
-  gem.files       = Dir['lib/**/*','test/**/*','*.gemspec','*.md','AUTHORS','COPYING','Gemfile','VERSION']
+  gem.files       = Dir['lib/**/*','test/**/*','spec/**/*','*.gemspec','*.md','AUTHORS','COPYING','Gemfile','VERSION']
   gem.test_files  = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ['lib']
 
