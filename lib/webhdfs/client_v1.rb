@@ -11,7 +11,6 @@ module WebHDFS
     # This hash table holds command options.
     OPT_TABLE = {} # internal use only
     KNOWN_ERRORS = ['LeaseExpiredException'].freeze
-    DEFAULT_PORT = 50070
 
     attr_accessor :host, :port, :username, :doas, :proxy_address, :proxy_port
     attr_accessor :proxy_user, :proxy_pass
@@ -29,7 +28,6 @@ module WebHDFS
     attr_accessor :ssl_version
     attr_accessor :kerberos, :kerberos_keytab
     attr_accessor :http_headers
-    attr_accessor :jmx_host
 
     SSL_VERIFY_MODES = [:none, :peer]
     def ssl_verify_mode=(mode)
@@ -46,9 +44,6 @@ module WebHDFS
       @doas = doas
       @proxy_address = proxy_address
       @proxy_port = proxy_port
-
-      @jmx_host = nil
-
       @retry_known_errors = false
       @retry_times = 1
       @retry_interval = 1
@@ -65,57 +60,6 @@ module WebHDFS
       @kerberos = false
       @kerberos_keytab = nil
       @http_headers = http_headers
-
-      if block_given?
-        Proc.new.call(self)
-      end
-    end
-
-    def keytab_path_set?
-      if @kerberos_keytab.nil? || @kerberos_keytab.empty?
-        WebHDFS.logger.fatal("The kerberos keytab is not set")
-        false
-      else
-        true
-      end
-    end
-
-    def ensure_keytab_path_set
-      raise WebHDFS::KerberosError, "The kerberos keytab must be set" unless keytab_path_set?
-    end
-
-    def operational?
-      res = stat('/')
-      !!res
-    rescue StandardError => e
-      WebHDFS.logger.error("Failed to access HDFS with error #{$!}")
-      if e.is_a?(NameError) && e.message =~ /undefined local variable or method `min_stat'/
-        WebHDFS.logger.info("Do you have a valid keytab file at #{@kerberos_keytab}?")
-      end
-      raise e
-    end
-
-    def ensure_operational
-      raise WebHDFS::Error, "The client isn't working" unless operational?
-    end
-
-    def get_namenode_from_jmx
-      if @jmx_host.nil? || @jmx_host.empty?
-        raise WebHDFS::JMXError, "JMX host is not set"
-      end
-
-      conn = WebHDFS::APIConnection.new(@jmx_host)
-      path = 'jmx?qry=Hadoop:service=NameNode,name=NameNodeStatus'
-      res = conn.get(path)
-
-      res['beans'].first['HostAndPort'].split(':').first
-    end
-
-    def set_namenode_from_jmx
-      @host = get_namenode_from_jmx
-    rescue StandardError => e
-      WebHDFS.logger.warn("Failed to detect namenode with error: #{e}")
-      WebHDFS.logger.warn("Remaining on #{@host}")
     end
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATE
@@ -462,162 +406,6 @@ module WebHDFS
         else
           raise WebHDFS::RequestFailedError, "response code:#{res.code}, message:#{message}"
         end
-      end
-    end
-
-    def retry_request(*args)
-      sleep @retry_interval if @retry_interval > 0
-      return request(*args)
-    end
-
-    def failover_occurred?(error)
-      specific_exception = error['RemoteException']['exception'] rescue nil
-      specific_exception == 'StandbyException'
-    end
-
-    def handle_failover(*args)
-      WebHDFS.logger.error("HDFS namenode in standby. Obtaining active from JMX and retrying.")
-      sleep @retry_interval if @retry_interval > 0
-      set_namenode_from_jmx
-      ensure_operational
-      request(*args)
-    end
-
-    def cannot_obtain_block_length?(error)
-      message = error['RemoteException']['message'] rescue nil
-      message =~ /^Cannot obtain block length/
-    end
-
-    def smart_retry(&block)
-      block.call
-    rescue WebHDFS::IOError => e
-      specific_exception = JSON.parse(e.message)['RemoteException']['exception'] rescue nil
-      message = JSON.parse(e.message)['RemoteException']['message'] rescue nil
-      if specific_exception == 'StandbyException'
-        WebHDFS.logger.error("HDFS namenode in standby. Sleeping for 10 seconds and then attempting to reconnect.")
-        Kernel.sleep 10
-        set_namenode_from_jmx
-        ensure_operational
-        block.call
-      elsif message =~ /^Cannot obtain block length/
-        WebHDFS.logger.error(e.message)
-        Kernel.sleep 5
-        block.call
-      else
-        raise
-      end
-    rescue WebHDFS::ServerError => e
-      WebHDFS.logger.error(e.message)
-      Kernel.sleep 15
-      block.call
-    rescue WebHDFS::KerberosError => e
-      WebHDFS.logger.error("Kerberos credentials expired, refreshing them.")
-      set_namenode_from_jmx
-      ensure_operational
-      block.call
-    end
-
-    def rescue_read_errors(path, &block)
-      block.call
-    rescue WebHDFS::FileNotFoundError => e
-      begin
-        message = JSON.parse(e.message)["RemoteException"]["message"]
-      rescue StandardError
-        message = e.message
-      end
-      if message =~ /not found/
-        # raise NeutronicHelper::FileNotFoundError, message, e.backtrace
-        raise WebHDFS::FileNotFoundError, message, e.backtrace
-      else
-        raise InvalidOpError, message, e.backtrace
-      end
-    end
-
-    public
-
-    # TODO: The following are all HDFS methods.
-    # TODO: Use the CREATE op with overwrite=false (this is the default)
-    # https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Create_and_Write_to_a_File
-    # https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Overwrite
-    # Follow it by append regardless of outcome
-    def _append(path, data)
-      smart_retry do
-        begin
-          stat(path)
-          append(path, data + "\n")
-        rescue WebHDFS::FileNotFoundError
-          create(path, data + "\n")
-        end
-      end
-    end
-
-    def _rm_r(path)
-      _rm_r!(path)
-    # rescue NeutronicHelper::FileNotFoundError
-    rescue WebHDFS::FileNotFoundError
-      nil
-    end
-
-    def _rm_r!(path)
-      smart_retry do
-        begin
-          stat(path)
-        rescue WebHDFS::FileNotFoundError => e
-          # raise NeutronicHelper::FileNotFoundError, "File #{path} not found"
-          raise WebHDFS::FileNotFoundError, "File #{path} not found", e.backtrace
-        end
-        delete(path, recursive: true)
-      end
-    end
-
-    # TODO: Rename this to list_filenames
-    def _ls(path)
-      smart_retry do
-        list(path).map{ |f| f['pathSuffix'] }
-      end
-    end
-
-    def _mkdir(path)
-      smart_retry do
-        mkdir(path, permission: '0775')
-      end
-    end
-
-    def _mv(paths, target_dir)
-      paths.each do |path|
-        smart_retry do
-          rename(path, File.join(target_dir, File.basename(path)))
-        end
-      end
-    end
-
-    def _read(path)
-      smart_retry do
-        rescue_read_errors(path) do
-          read(path)
-        end
-      end
-    end
-
-    def _tip_of_tail(path)
-      _read(path).split("\n").last || ''
-    end
-
-    def _content(path)
-      smart_retry do
-        content_summary(path)
-      end
-    end
-
-    def _mtime(path)
-      smart_retry do
-        begin
-          modification_time = stat(path)['modificationTime']
-        rescue WebHDFS::FileNotFoundError => e
-          # raise NeutronicHelper::FileNotFoundError, "File #{path} not found"
-          raise WebHDFS::FileNotFoundError, "File #{path} not found", e.backtrace
-        end
-        Time.at(modification_time / 1000)
       end
     end
   end
