@@ -23,7 +23,6 @@ describe Simple do
   describe '#get_namenode_from_jmx' do
     it 'returns the correct namenode' do
       client = get_client
-      # TODO: This pattern should also accept JMX_HOST
       stub_request(:get, /localhost/).to_return(body: fixture('namenode_status.json'))
       expect(client.get_namenode_from_jmx).to eq(DEFAULT_NAMENODE)
     end

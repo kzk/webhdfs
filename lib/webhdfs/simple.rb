@@ -5,7 +5,6 @@ module WebHDFS
     attr_accessor :jmx_host
     attr_reader :raw
 
-    # TODO: Maybe it just makes more sense to take opts and merge them with raw client
     def initialize(opts = {})
       @jmx_host = opts[:jmx_host]
       @raw = ClientV1.new
@@ -92,14 +91,12 @@ module WebHDFS
       end
     end
 
-    # TODO: Rename this to list_filenames
     def ls(path)
       smart_retry do
         @raw.list(path).map{ |f| f['pathSuffix'] }
       end
     end
 
-    # NOTE: overrides
     def mkdir(path)
       smart_retry do
         @raw.mkdir(path)
@@ -114,7 +111,6 @@ module WebHDFS
       end
     end
 
-    # NOTE: overrides
     def read(path)
       smart_retry do
         rescue_read_errors(path) do
