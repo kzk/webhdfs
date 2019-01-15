@@ -122,7 +122,7 @@ Tests expect these environment variables:
 
 | Variable | Purpose |
 | :------- | :------ |
-| `API_HOST` | The JMX API hostname |
+| `JMX_HOST` | The JMX API hostname |
 | `DEFAULT_NAMENODE` | The default namenode hostname |
 | `TEST_DIR` | The path scope of where tests will be run |
 | `KERBEROS` | Whether kerberos authentication is required |
@@ -132,7 +132,7 @@ For example:
 
 ```
 $ KERBEROS=true \
-  API_HOST='http://jmx.site.com' \
+  JMX_HOST='http://jmx.site.com' \
   DEFAULT_NAMENODE='hdfs.namenode.com' \
   KEYTAB_PATH=~/someone.keytab \
   TEST_DIR=/user/someone/test_dir/ \

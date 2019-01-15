@@ -2,7 +2,7 @@ require 'webmock/rspec'
 WebMock.disable_net_connect!(allow: [/\/localhost/, /\/hdfs-dev\./, /\/webhdfs\//])
 
 # FIXME: DRY
-API_HOST = ENV['API_HOST'] || 'http://localhost'
+JMX_HOST = ENV['JMX_HOST'] || 'http://localhost'
 DEFAULT_NAMENODE = ENV['DEFAULT_NAMENODE'] || 'localhost'
 TEST_DIR = ENV['TEST_DIR']
 

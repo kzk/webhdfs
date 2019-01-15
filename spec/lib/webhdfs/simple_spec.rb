@@ -4,10 +4,8 @@ include WebHDFS
 
 require_relative '../../shared_examples/target_fs_examples'
 
-# NOTE: Client's initializer used to get from jmx, so tests assume that
-# TODO: Rename API_HOST to JMX_HOST
 def get_client
-  client = Simple.new(jmx_host: API_HOST) do |c|
+  client = Simple.new(jmx_host: JMX_HOST) do |c|
     c.host = DEFAULT_NAMENODE
     c.kerberos = true
     c.kerberos_keytab = ENV['KEYTAB_PATH']
@@ -25,7 +23,7 @@ describe Simple do
   describe '#get_namenode_from_jmx' do
     it 'returns the correct namenode' do
       client = get_client
-      # TODO: This pattern should also accept API_HOST
+      # TODO: This pattern should also accept JMX_HOST
       stub_request(:get, /localhost/).to_return(body: fixture('namenode_status.json'))
       expect(client.get_namenode_from_jmx).to eq(DEFAULT_NAMENODE)
     end

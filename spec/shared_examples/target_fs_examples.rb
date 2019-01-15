@@ -3,7 +3,7 @@ require_relative 'dir_examples'
 shared_examples 'a target filesystem interface' do
 
   subject{
-    described_class.new(jmx_host: API_HOST) do |c|
+    described_class.new(jmx_host: JMX_HOST) do |c|
       c.host = DEFAULT_NAMENODE
     end
   }
