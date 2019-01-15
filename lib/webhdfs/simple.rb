@@ -15,8 +15,8 @@ module WebHDFS
       end
     end
 
-    def keytab_path_set?
-      if @raw.kerberos_keytab.nil? || @raw.kerberos_keytab.empty?
+    def self.keytab_path_set?
+      if ENV['KEYTAB_PATH'].nil? || ENV['KEYTAB_PATH'].empty?
         WebHDFS.logger.fatal("The kerberos keytab is not set")
         false
       else
