@@ -164,7 +164,6 @@ module WebHDFS
         raise
       end
     rescue WebHDFS::ServerError => e
-      puts "RETRYING"
       WebHDFS.logger.error(e.message)
       Kernel.sleep 15
       set_host_from_jmx
