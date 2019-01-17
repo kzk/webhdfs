@@ -78,6 +78,8 @@ module WebHDFS
       nil
     end
 
+    alias_method :delete, :rm_r
+
     def rm_r!(path)
       smart_retry do
         begin
@@ -95,6 +97,8 @@ module WebHDFS
       end
     end
 
+    alias_method :list, :ls
+
     def mkdir(path)
       smart_retry do
         @raw.mkdir(path)
@@ -108,6 +112,8 @@ module WebHDFS
         end
       end
     end
+
+    alias_method :move, :mv
 
     def read(path)
       smart_retry do
