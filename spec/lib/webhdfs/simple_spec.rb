@@ -34,7 +34,7 @@ describe Simple do
 
       stub_request(:get, /localhost/).to_return(status: 500)
       allow_any_instance_of(WebHDFS::Simple).to receive(:get_namenode_from_jmx).and_raise(WebHDFS::Error.new("Whatever"))
-      client.set_namenode_from_jmx
+      client.set_host_from_jmx
 
       expect(client.raw.host).to eq('remain')
     end
@@ -46,7 +46,7 @@ describe Simple do
       allow_any_instance_of(WebHDFS::Simple).to receive(:ensure_operational).and_return(true)
 
       @bad_hdfs = get_client
-      @bad_hdfs.set_namenode_from_jmx
+      @bad_hdfs.set_host_from_jmx
 
       expect(@bad_hdfs.raw.host).to eq('bad_hdfs')
     end

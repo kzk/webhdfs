@@ -42,7 +42,7 @@ module WebHDFS
       raise WebHDFS::Error, "The client isn't working" unless operational?
     end
 
-    def get_namenode_from_jmx
+    def get_host_from_jmx
       if @jmx_host.nil? || @jmx_host.empty?
         raise WebHDFS::JMXError, "JMX host is not set"
       end
@@ -54,8 +54,8 @@ module WebHDFS
       res['beans'].first['HostAndPort'].split(':').first
     end
 
-    def set_namenode_from_jmx
-      @raw.host = get_namenode_from_jmx
+    def set_host_from_jmx
+      @raw.host = get_host_from_jmx
     rescue StandardError => e
       WebHDFS.logger.warn("Failed to detect namenode with error: #{e}")
       WebHDFS.logger.warn("Remaining on #{@raw.host}")
@@ -147,7 +147,7 @@ module WebHDFS
       if specific_exception == 'StandbyException'
         WebHDFS.logger.error("HDFS namenode in standby. Sleeping for 10 seconds and then attempting to reconnect.")
         Kernel.sleep 10
-        set_namenode_from_jmx
+        set_host_from_jmx
         ensure_operational
         block.call
       elsif message =~ /^Cannot obtain block length/
@@ -161,12 +161,12 @@ module WebHDFS
       puts "RETRYING"
       WebHDFS.logger.error(e.message)
       Kernel.sleep 15
-      set_namenode_from_jmx
+      set_host_from_jmx
       ensure_operational
       block.call
     rescue WebHDFS::KerberosError => e
       WebHDFS.logger.error("Kerberos credentials expired, refreshing them.")
-      set_namenode_from_jmx
+      set_host_from_jmx
       ensure_operational
       block.call
     end
