@@ -28,6 +28,7 @@ module WebHDFS
     attr_accessor :ssl_version
     attr_accessor :kerberos, :kerberos_keytab
     attr_accessor :http_headers
+    attr_accessor :jmx
 
     SSL_VERIFY_MODES = [:none, :peer]
     def ssl_verify_mode=(mode)
@@ -60,6 +61,104 @@ module WebHDFS
       @kerberos = false
       @kerberos_keytab = nil
       @http_headers = http_headers
+
+      @jmx = nil
+    end
+
+    def self.simple(opts = {})
+      opts = {
+        :jmx => ENV['JMX'],
+        :host => ENV['DEFAULT_NAMENODE'] || 'localhost',
+        :port => 50070,
+        :kerberos => ENV['KERBEROS'] && true,
+        :kerberos_keytab => ENV['KERBEROS_KEYTAB'],
+
+        :retry_known_errors => false,
+        :retry_times => 1,
+        :retry_interval => 1,
+
+        :httpfs_mode => false,
+
+        :ssl => false,
+      }.merge(opts)
+
+      client = new
+
+      client.host = opts[:host]
+      client.port = opts[:port]
+      client.username = opts[:username]
+
+      client.doas = opts[:doas]
+
+      client.proxy_address = opts[:proxy_address]
+      client.proxy_port = opts[:proxy_port]
+
+      client.retry_known_errors = opts[:retry_known_errors]
+      client.retry_times = opts[:retry_times]
+      client.retry_interval = opts[:retry_interval]
+
+      client.httpfs_mode = opts[:httpfs_mode]
+
+      client.ssl = opts[:ssl]
+      client.ssl_ca_file = opts[:ssl_ca_file]
+      client.ssl_cert = opts[:ssl_cert]
+      client.ssl_key = opts[:ssl_key]
+      client.ssl_version = opts[:ssl_version]
+
+      client.http_headers = opts[:http_headers]
+
+      client.kerberos = opts[:kerberos]
+      client.kerberos_keytab = opts[:kerberos_keytab]
+
+      client.jmx = opts[:jmx]
+
+      client
+    end
+
+    def self.keytab_path_set?
+      if ENV['KEYTAB_PATH'].nil? || ENV['KEYTAB_PATH'].empty?
+        WebHDFS.logger.fatal("The kerberos keytab is not set")
+        false
+      else
+        true
+      end
+    end
+
+    def ensure_keytab_path_set
+      raise WebHDFS::KerberosError, "The kerberos keytab must be set" unless keytab_path_set?
+    end
+
+    def operational?
+      !!stat('/')
+    rescue StandardError => e
+      WebHDFS.logger.error("Failed to access HDFS with error #{$!}")
+      if e.is_a?(NameError) && e.message =~ /undefined local variable or method `min_stat'/
+        WebHDFS.logger.info("Do you have a valid keytab file at #{@kerberos_keytab}?")
+      end
+      raise e
+    end
+
+    def ensure_operational
+      raise WebHDFS::Error, "The client isn't working" unless operational?
+    end
+
+    def get_host_from_jmx
+      if @jmx.nil? || @jmx.empty?
+        raise WebHDFS::JMXError, "JMX host is not set"
+      end
+
+      conn = WebHDFS::APIConnection.new(@jmx)
+      path = 'jmx?qry=Hadoop:service=NameNode,name=NameNodeStatus'
+      res = conn.get(path)
+
+      res['beans'].first['HostAndPort'].split(':').first
+    end
+
+    def set_host_from_jmx
+      @host = get_host_from_jmx
+    rescue StandardError => e
+      WebHDFS.logger.warn("Failed to detect namenode with error: #{e}")
+      WebHDFS.logger.warn("Remaining on #{@host}")
     end
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATE
@@ -70,7 +169,7 @@ module WebHDFS
         options = options.merge({'data' => 'true'})
       end
       check_options(options, OPT_TABLE['CREATE'])
-      res = operate_requests('PUT', path, 'CREATE', options, body)
+      res = smart_request('PUT', path, 'CREATE', options, body)
       res.code == '201'
     end
     OPT_TABLE['CREATE'] = ['overwrite', 'blocksize', 'replication', 'permission', 'buffersize', 'data']
@@ -81,7 +180,7 @@ module WebHDFS
         options = options.merge({'data' => 'true'})
       end
       check_options(options, OPT_TABLE['APPEND'])
-      res = operate_requests('POST', path, 'APPEND', options, body)
+      res = smart_request('POST', path, 'APPEND', options, body)
       res.code == '200'
     end
     OPT_TABLE['APPEND'] = ['buffersize', 'data']
@@ -90,7 +189,7 @@ module WebHDFS
     #                [&offset=<LONG>][&length=<LONG>][&buffersize=<INT>]"
     def read(path, options={})
       check_options(options, OPT_TABLE['OPEN'])
-      res = operate_requests('GET', path, 'OPEN', options)
+      res = smart_request('GET', path, 'OPEN', options)
       res.body
     end
     OPT_TABLE['OPEN'] = ['offset', 'length', 'buffersize']
@@ -99,7 +198,7 @@ module WebHDFS
     # curl -i -X PUT "http://<HOST>:<PORT>/<PATH>?op=MKDIRS[&permission=<OCTAL>]"
     def mkdir(path, options={})
       check_options(options, OPT_TABLE['MKDIRS'])
-      res = operate_requests('PUT', path, 'MKDIRS', options)
+      res = smart_request('PUT', path, 'MKDIRS', options)
       check_success_json(res, 'boolean')
     end
     OPT_TABLE['MKDIRS'] = ['permission']
@@ -111,7 +210,7 @@ module WebHDFS
       unless dest.start_with?('/')
         dest = '/' + dest
       end
-      res = operate_requests('PUT', path, 'RENAME', options.merge({'destination' => dest}))
+      res = smart_request('PUT', path, 'RENAME', options.merge({'destination' => dest}))
       check_success_json(res, 'boolean')
     end
 
@@ -119,7 +218,7 @@ module WebHDFS
     #                          [&recursive=<true|false>]"
     def delete(path, options={})
       check_options(options, OPT_TABLE['DELETE'])
-      res = operate_requests('DELETE', path, 'DELETE', options)
+      res = smart_request('DELETE', path, 'DELETE', options)
       check_success_json(res, 'boolean')
     end
     OPT_TABLE['DELETE'] = ['recursive']
@@ -127,7 +226,7 @@ module WebHDFS
     # curl -i  "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=GETFILESTATUS"
     def stat(path, options={})
       check_options(options, OPT_TABLE['GETFILESTATUS'])
-      res = operate_requests('GET', path, 'GETFILESTATUS', options)
+      res = smart_request('GET', path, 'GETFILESTATUS', options)
       check_success_json(res, 'FileStatus')
     end
     alias :getfilestatus :stat
@@ -135,7 +234,7 @@ module WebHDFS
     # curl -i  "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=LISTSTATUS"
     def list(path, options={})
       check_options(options, OPT_TABLE['LISTSTATUS'])
-      res = operate_requests('GET', path, 'LISTSTATUS', options)
+      res = smart_request('GET', path, 'LISTSTATUS', options)
       check_success_json(res, 'FileStatuses')['FileStatus']
     end
     alias :liststatus :list
@@ -143,7 +242,7 @@ module WebHDFS
     # curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=GETCONTENTSUMMARY"
     def content_summary(path, options={})
       check_options(options, OPT_TABLE['GETCONTENTSUMMARY'])
-      res = operate_requests('GET', path, 'GETCONTENTSUMMARY', options)
+      res = smart_request('GET', path, 'GETCONTENTSUMMARY', options)
       check_success_json(res, 'ContentSummary')
     end
     alias :getcontentsummary :content_summary
@@ -151,7 +250,7 @@ module WebHDFS
     # curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=GETFILECHECKSUM"
     def checksum(path, options={})
       check_options(options, OPT_TABLE['GETFILECHECKSUM'])
-      res = operate_requests('GET', path, 'GETFILECHECKSUM', options)
+      res = smart_request('GET', path, 'GETFILECHECKSUM', options)
       check_success_json(res, 'FileChecksum')
     end
     alias :getfilechecksum :checksum
@@ -159,7 +258,7 @@ module WebHDFS
     # curl -i "http://<HOST>:<PORT>/webhdfs/v1/?op=GETHOMEDIRECTORY"
     def homedir(options={})
       check_options(options, OPT_TABLE['GETHOMEDIRECTORY'])
-      res = operate_requests('GET', '/', 'GETHOMEDIRECTORY', options)
+      res = smart_request('GET', '/', 'GETHOMEDIRECTORY', options)
       check_success_json(res, 'Path')
     end
     alias :gethomedirectory :homedir
@@ -168,7 +267,7 @@ module WebHDFS
     #                 [&permission=<OCTAL>]"
     def chmod(path, mode, options={})
       check_options(options, OPT_TABLE['SETPERMISSION'])
-      res = operate_requests('PUT', path, 'SETPERMISSION', options.merge({'permission' => mode}))
+      res = smart_request('PUT', path, 'SETPERMISSION', options.merge({'permission' => mode}))
       res.code == '200'
     end
     alias :setpermission :chmod
@@ -181,7 +280,7 @@ module WebHDFS
           options.has_key?(:owner) or options.has_key?(:group)
         raise ArgumentError, "'chown' needs at least one of owner or group"
       end
-      res = operate_requests('PUT', path, 'SETOWNER', options)
+      res = smart_request('PUT', path, 'SETOWNER', options)
       res.code == '200'
     end
     OPT_TABLE['SETOWNER'] = ['owner', 'group']
@@ -191,7 +290,7 @@ module WebHDFS
     #                           [&replication=<SHORT>]"
     def replication(path, replnum, options={})
       check_options(options, OPT_TABLE['SETREPLICATION'])
-      res = operate_requests('PUT', path, 'SETREPLICATION', options.merge({'replication' => replnum.to_s}))
+      res = smart_request('PUT', path, 'SETREPLICATION', options.merge({'replication' => replnum.to_s}))
       check_success_json(res, 'boolean')
     end
     alias :setreplication :replication
@@ -206,11 +305,73 @@ module WebHDFS
           options.has_key?(:modificationtime) or options.has_key?(:accesstime)
         raise ArgumentError, "'chown' needs at least one of modificationtime or accesstime"
       end
-      res = operate_requests('PUT', path, 'SETTIMES', options)
+      res = smart_request('PUT', path, 'SETTIMES', options)
       res.code == '200'
     end
     OPT_TABLE['SETTIMES'] = ['modificationtime', 'accesstime']
     alias :settimes :touch
+
+    # Higher level
+    def append_or_create(path, data)
+      append(path, data + "\n")
+    rescue WebHDFS::FileNotFoundError
+      create(path, data + "\n")
+    end
+
+    def delete_recursive(path)
+      delete(path, recursive: true)
+    end
+
+    def delete_recursive!(path)
+      begin
+        stat(path)
+      rescue WebHDFS::FileNotFoundError => e
+        raise WebHDFS::FileNotFoundError, "File #{path} not found", e.backtrace
+      end
+
+      delete_recursive(path)
+    end
+
+    def list_filenames(path)
+      list(path).map { |f| f['pathSuffix'] }
+    end
+
+    def move_paths(paths, target_dir)
+      paths.each do |path|
+        rename(path, File.join(target_dir, File.basename(path)))
+      end
+    end
+
+    def safe_read(path)
+      begin
+        read(path)
+      rescue WebHDFS::FileNotFoundError => e
+        begin
+          message = JSON.parse(e.message)["RemoteException"]["message"]
+        rescue StandardError
+          message = e.message
+        end
+        if message =~ /not found/
+          raise WebHDFS::FileNotFoundError, message, e.backtrace
+        else
+          raise InvalidOpError, message, e.backtrace
+        end
+      end
+    end
+
+    def tip_of_tail(path)
+      read(path).split("\n").last || ''
+    end
+
+    def mtime(path)
+      begin
+        modification_time = stat(path)['modificationTime']
+      rescue WebHDFS::FileNotFoundError => e
+        raise WebHDFS::FileNotFoundError, "File #{path} not found", e.backtrace
+      end
+
+      Time.at(modification_time / 1000)
+    end
 
     # def delegation_token(user, options={}) # GETDELEGATIONTOKEN
     #   raise NotImplementedError
@@ -407,6 +568,35 @@ module WebHDFS
           raise WebHDFS::RequestFailedError, "response code:#{res.code}, message:#{message}"
         end
       end
+    end
+
+    private
+    def smart_request(method, path, op, params={}, payload=nil)
+      operate_requests(method, path, op, params, payload)
+    rescue WebHDFS::IOError => e
+      specific_exception = JSON.parse(e.message)['RemoteException']['exception'] rescue nil
+      message = JSON.parse(e.message)['RemoteException']['message'] rescue nil
+      if specific_exception == 'StandbyException'
+        WebHDFS.logger.error("HDFS namenode in standby. Sleeping for 10 seconds and then attempting to reconnect.")
+        Kernel.sleep 10
+        set_host_from_jmx
+        operate_requests(method, path, op, params, payload)
+      elsif message =~ /^Cannot obtain block length/
+        WebHDFS.logger.error(e.message)
+        Kernel.sleep 5
+        operate_requests(method, path, op, params, payload)
+      else
+        raise
+      end
+    rescue WebHDFS::ServerError => e
+      WebHDFS.logger.error(e.message)
+      Kernel.sleep 15
+      set_host_from_jmx
+      operate_requests(method, path, op, params, payload)
+    rescue WebHDFS::KerberosError => e
+      WebHDFS.logger.error("Kerberos credentials expired, refreshing them.")
+      set_host_from_jmx
+      operate_requests(method, path, op, params, payload)
     end
   end
 end

@@ -5,10 +5,10 @@ shared_examples 'dir setup' do
   end
 
   before :each do
-    get_client.mkdir(path)
+    WebHDFS::Client.simple.mkdir(path)
   end
 
   after :each do
-    get_client.rm_r(path)
+    WebHDFS::Client.simple.delete_recursive(path)
   end
 end
