@@ -1,7 +1,7 @@
-JMX_HOST = ENV['JMX_HOST'] || 'http://localhost'
+JMX = ENV['JMX'] || 'http://localhost'
 DEFAULT_NAMENODE = ENV['DEFAULT_NAMENODE'] || 'localhost'
-TEST_DIR = ENV['TEST_DIR']
+TEST_PATH = ENV['TEST_PATH']
 
-if TEST_DIR.nil? || TEST_DIR.empty?
-  raise "Must explicitly set a TEST_DIR to run tests within"
+if TEST_PATH.nil? || TEST_PATH.empty?
+  raise "Must explicitly set a TEST_PATH to run tests within"
 end

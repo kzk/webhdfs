@@ -1,7 +1,7 @@
 require 'test_helper'
 
 def scoped_path(path)
-  File.join(TEST_DIR, path)
+  File.join(TEST_PATH, path)
 end
 
 class FileUtilsTest < Test::Unit::TestCase

@@ -1,7 +1,7 @@
 shared_examples 'dir setup' do
 
   let(:path) do
-    File.join(TEST_DIR, 'test_dir')
+    File.join(TEST_PATH, 'test_dir')
   end
 
   before :each do

@@ -122,9 +122,9 @@ Tests expect these environment variables:
 
 | Variable | Purpose |
 | :------- | :------ |
-| `JMX_HOST` | The JMX API hostname |
+| `JMX` | The JMX API hostname |
 | `DEFAULT_NAMENODE` | The default namenode hostname |
-| `TEST_DIR` | The path scope of where tests will be run |
+| `TEST_PATH` | The path scope of where tests will be run |
 | `KERBEROS` | Whether kerberos authentication is required |
 | `KEYTAB_PATH` | The path to the keytab |
 
@@ -132,10 +132,10 @@ For example:
 
 ```
 $ KERBEROS=true \
-  JMX_HOST='http://jmx.site.com' \
+  JMX='http://jmx.site.com' \
   DEFAULT_NAMENODE='hdfs.namenode.com' \
   KEYTAB_PATH=~/someone.keytab \
-  TEST_DIR=/user/someone/test_dir/ \
+  TEST_PATH=/user/someone/test_dir/ \
   bundle exec rake test
 ```
 
