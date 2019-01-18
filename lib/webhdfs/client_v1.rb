@@ -313,13 +313,16 @@ module WebHDFS
 
     # Higher level
     def append_or_create(path, data)
+      stat(path)
       append(path, data + "\n")
     rescue WebHDFS::FileNotFoundError
       create(path, data + "\n")
     end
 
     def delete_recursive(path)
-      delete(path, recursive: true)
+      delete_recursive!(path)
+    rescue WebHDFS::FileNotFoundError
+      nil
     end
 
     def delete_recursive!(path)
@@ -329,7 +332,7 @@ module WebHDFS
         raise WebHDFS::FileNotFoundError, "File #{path} not found", e.backtrace
       end
 
-      delete_recursive(path)
+      delete(path, recursive: true)
     end
 
     def list_filenames(path)
@@ -360,7 +363,7 @@ module WebHDFS
     end
 
     def tip_of_tail(path)
-      read(path).split("\n").last || ''
+      safe_read(path).split("\n").last || ''
     end
 
     def mtime(path)
