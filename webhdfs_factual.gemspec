@@ -9,14 +9,13 @@ Gem::Specification.new do |gem|
   gem.authors     = ["Kazuki Ohta", "Satoshi Tagomori", "Jorge Israel Peña"]
   gem.email       = ["kazuki.ohta@gmail.com", "tagomoris@gmail.com", "jorge@factual.com"]
   gem.has_rdoc    = false
-  gem.files       = Dir['lib/**/*','test/**/*','spec/**/*','*.gemspec','*.md','AUTHORS','COPYING','Gemfile','VERSION']
-  gem.test_files  = gem.files.grep(%r{^(test|spec|features)/})
+  gem.files       = Dir['lib/**/*','spec/**/*','*.gemspec','*.md','AUTHORS','COPYING','Gemfile','VERSION']
+  gem.test_files  = gem.files.grep(%r{^(spec|features)/})
   gem.require_paths = ['lib']
 
   gem.add_development_dependency "rake"
   gem.add_development_dependency "rdoc"
   gem.add_development_dependency "simplecov"
-  gem.add_development_dependency "test-unit"
   gem.add_development_dependency "rspec"
   gem.add_development_dependency "webmock"
 
