@@ -66,7 +66,7 @@ module WebHDFS
     end
 
     def self.simple(opts = {})
-      opts = {
+      defaults = {
         :jmx => ENV['JMX'],
         :host => ENV['DEFAULT_NAMENODE'] || 'localhost',
         :port => 50070,
@@ -80,37 +80,20 @@ module WebHDFS
         :httpfs_mode => false,
 
         :ssl => false,
-      }.merge(opts)
+      }
+
+      opts = defaults.merge(opts)
 
       client = new
 
-      client.host = opts[:host]
-      client.port = opts[:port]
-      client.username = opts[:username]
-
-      client.doas = opts[:doas]
-
-      client.proxy_address = opts[:proxy_address]
-      client.proxy_port = opts[:proxy_port]
-
-      client.retry_known_errors = opts[:retry_known_errors]
-      client.retry_times = opts[:retry_times]
-      client.retry_interval = opts[:retry_interval]
-
-      client.httpfs_mode = opts[:httpfs_mode]
-
-      client.ssl = opts[:ssl]
-      client.ssl_ca_file = opts[:ssl_ca_file]
-      client.ssl_cert = opts[:ssl_cert]
-      client.ssl_key = opts[:ssl_key]
-      client.ssl_version = opts[:ssl_version]
-
-      client.http_headers = opts[:http_headers]
-
-      client.kerberos = opts[:kerberos]
-      client.kerberos_keytab = opts[:kerberos_keytab]
-
-      client.jmx = opts[:jmx]
+      # Use each key-value pair from the defaults hash to set the client's
+      # corresponding attribute. Only keys from defaults are considered since
+      # those are hard-coded whereas the ones from opts are user-provided, and
+      # using those would allow the user to set any arbitrary attribute.
+      defaults.keys.each do |key|
+        method = "#{key}="
+        client.send(method, opts[key]) if client.respond_to?(method)
+      end
 
       client
     end
