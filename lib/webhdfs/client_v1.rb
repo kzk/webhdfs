@@ -89,7 +89,8 @@ module WebHDFS
       # Use each key-value pair from the defaults hash to set the client's
       # corresponding attribute. Only keys from defaults are considered since
       # those are hard-coded whereas the ones from opts are user-provided, and
-      # using those would allow the user to set any arbitrary attribute.
+      # using those would allow the user to inadvertently set any arbitrary
+      # attribute.
       defaults.keys.each do |key|
         method = "#{key}="
         client.send(method, opts[key]) if client.respond_to?(method)
