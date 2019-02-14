@@ -61,7 +61,7 @@ shared_examples 'a target filesystem implementation' do
     it 'raises an exception when file not found' do
       expect {
         subject.tip_of_tail(filepath)
-      }.to raise_error(WebHDFS::FileNotFoundError, /not found/)
+      }.to raise_error(WebHDFS::FileNotFoundError)
     end
   end
 
@@ -78,7 +78,7 @@ shared_examples 'a target filesystem implementation' do
     it 'raises an exception when file not found' do
       expect {
         subject.delete_recursive!(filepath)
-      }.to raise_error(WebHDFS::FileNotFoundError, /not found/)
+      }.to raise_error(WebHDFS::FileNotFoundError)
     end
   end
 
@@ -92,7 +92,7 @@ shared_examples 'a target filesystem implementation' do
     it 'raises an exception when file not found' do
       expect {
         subject.safe_read(filepath)
-      }.to raise_error(WebHDFS::FileNotFoundError, /not found/)
+      }.to raise_error(WebHDFS::FileNotFoundError)
     end
   end
 
@@ -107,7 +107,7 @@ shared_examples 'a target filesystem implementation' do
     it 'raises an exception when file is not found' do
       expect {
         subject.mtime(filepath)
-      }.to raise_error(WebHDFS::FileNotFoundError, /not found/)
+      }.to raise_error(WebHDFS::FileNotFoundError)
     end
   end
 

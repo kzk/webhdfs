@@ -310,11 +310,7 @@ module WebHDFS
     end
 
     def delete_recursive!(path)
-      begin
-        stat(path)
-      rescue WebHDFS::FileNotFoundError => e
-        raise WebHDFS::FileNotFoundError, "File #{path} not found", e.backtrace
-      end
+      stat(path)
 
       delete(path, recursive: true)
     end
@@ -351,11 +347,7 @@ module WebHDFS
     end
 
     def mtime(path)
-      begin
-        modification_time = stat(path)['modificationTime']
-      rescue WebHDFS::FileNotFoundError => e
-        raise WebHDFS::FileNotFoundError, "File #{path} not found", e.backtrace
-      end
+      modification_time = stat(path)['modificationTime']
 
       Time.at(modification_time / 1000)
     end
