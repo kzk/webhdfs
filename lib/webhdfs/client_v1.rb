@@ -71,7 +71,7 @@ module WebHDFS
         :host => ENV['DEFAULT_NAMENODE'] || 'localhost',
         :port => 50070,
         :kerberos => ENV['KERBEROS'] && true,
-        :kerberos_keytab => ENV['KERBEROS_KEYTAB'],
+        :kerberos_keytab => ENV['KEYTAB_PATH'],
 
         :retry_known_errors => false,
         :retry_times => 1,
