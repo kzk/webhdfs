@@ -296,11 +296,12 @@ module WebHDFS
     alias :settimes :touch
 
     # Higher level
-    def append_or_create(path, data)
+    def append_or_create(path, data, permission: nil)
       stat(path)
       append(path, data + "\n")
     rescue WebHDFS::FileNotFoundError
-      create(path, data + "\n")
+      options = permissions.nil? ? {} : { 'permission' => permission }
+      create(path, data + "\n", options)
     end
 
     def delete_recursive(path)
