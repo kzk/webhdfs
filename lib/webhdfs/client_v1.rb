@@ -164,6 +164,13 @@ module WebHDFS
     end
     alias :gethomedirectory :homedir
 
+    # curl -i "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=GETTRASHROOT"
+    def gettrashroot(options={})
+      check_options(options, OPT_TABLE['GETTRASHROOT'])
+      res = operate_requests('GET', '/', 'GETTRASHROOT', options)
+      check_success_json(res, 'Path')
+    end
+
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=SETPERMISSION
     #                 [&permission=<OCTAL>]"
     def chmod(path, mode, options={})
