@@ -13,6 +13,7 @@ Gem::Specification.new do |gem|
   gem.files       = Dir['lib/**/*','test/**/*','*.gemspec','*.md','AUTHORS','COPYING','Gemfile','VERSION']
   gem.test_files  = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ['lib']
+  gem.licenses    = ["Apache-2.0"]
 
   gem.add_development_dependency "rake"
   gem.add_development_dependency "rdoc"
