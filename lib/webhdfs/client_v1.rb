@@ -29,7 +29,6 @@ module WebHDFS
     attr_accessor :kerberos, :kerberos_keytab
     attr_accessor :http_headers
     attr_accessor :kerberos_delegation_token
-    attr_accessor :kerberos_token_updated_at
 
     SSL_VERIFY_MODES = [:none, :peer]
     def ssl_verify_mode=(mode)
@@ -72,15 +71,14 @@ module WebHDFS
     end
 
 
-    def get_cached_kerberos_delegation_token
-      return @kerberos_delegation_token if @kerberos_delegation_token && !should_kerberos_token_updated?
+    def get_cached_kerberos_delegation_token(force_renew=nil)
+      return @kerberos_delegation_token if @kerberos_delegation_token && !should_kerberos_token_updated? && !force_renew
 
-      if !@kerberos_delegation_token
+      if !@kerberos_delegation_token || force_renew
         @kerberos_delegation_token = get_kerberos_delegation_token(@username)
       else
         renew_kerberos_delegation_token(@kerberos_delegation_token)
       end
-      @kerberos_token_updated_at = Time.now
       @kerberos_delegation_token
     rescue => e
       raise WebHDFS::RequestFailedError, e.message
@@ -257,6 +255,7 @@ module WebHDFS
       check_options(options, OPT_TABLE['GETDELEGATIONTOKEN'])
       res = operate_requests('GET', '/', 'GETDELEGATIONTOKEN', options)
       check_success_json(res, 'Token')
+      @kerberos_token_updated_at = Time.now
       JSON.parse(res.body)['Token']['urlString']
     end
     OPT_TABLE['GETDELEGATIONTOKEN'] = ['renewer']
@@ -267,6 +266,7 @@ module WebHDFS
       check_options(options, OPT_TABLE['RENEWDELEGATIONTOKEN'])
       res = operate_requests('PUT', '/', 'RENEWDELEGATIONTOKEN', options)
       check_success_json(res, 'long')
+      @kerberos_token_updated_at = Time.now
     end
     OPT_TABLE['RENEWDELEGATIONTOKEN'] = ['token']
 
@@ -435,8 +435,7 @@ module WebHDFS
           if message.include?('{"RemoteException":{')
             detail = JSON.parse(message) rescue nil
             if detail&.dig('RemoteException', 'exception') == 'InvalidToken' and detail&.dig('RemoteException', 'message').include?('HDFS_DELEGATION_TOKEN')
-              @kerberos_delegation_token = get_kerberos_delegation_token(@username)
-              params = params.merge('token' => @kerberos_delegation_token)
+              params = params.merge('token' => get_cached_kerberos_delegation_token(true))
               sleep @retry_interval if @retry_interval > 0
               return request(host, port, method, path, op, params, payload, header, retries+1)
             end
