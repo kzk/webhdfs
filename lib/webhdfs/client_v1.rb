@@ -28,8 +28,8 @@ module WebHDFS
     attr_accessor :ssl_version
     attr_accessor :kerberos, :kerberos_keytab
     attr_accessor :http_headers
-    attr_accessor :d_token
-    attr_accessor :latest_time
+    attr_accessor :kerberos_delegation_token
+    attr_accessor :kerberos_token_updated_at
 
     SSL_VERIFY_MODES = [:none, :peer]
     def ssl_verify_mode=(mode)
@@ -39,7 +39,7 @@ module WebHDFS
       @ssl_verify_mode = mode
     end
 
-    def initialize(host='localhost', port=50070, username=nil, doas=nil, proxy_address=nil, proxy_port=nil, http_headers={}, renew_token_hr=nil)
+    def initialize(host='localhost', port=50070, username=nil, doas=nil, proxy_address=nil, proxy_port=nil, http_headers={}, renew_kerberos_delegation_token_time_hour=nil)
       @host = host
       @port = port
       @username = username
@@ -61,33 +61,29 @@ module WebHDFS
 
       @kerberos = false
       @kerberos_keytab = nil
+      @renew_kerberos_delegation_token_time_hour = renew_kerberos_delegation_token_time_hour
+      @kerberos_delegation_token = nil
+      @kerberos_token_updated_at = Time.now
       @http_headers = http_headers
-
-      @renew_delegation_token_time_hr = renew_token_hr
-      @d_token = nil
-
-      @latest_time = Time.now
-
     end
 
-    def is_update_time
-      @latest_time + (@renew_delegation_token_time_hr * 60 * 60) <= Time.now
+    def should_kerberos_token_updated?
+      @kerberos_token_updated_at + (@renew_kerberos_delegation_token_time_hour * 60 * 60) <= Time.now
     end
 
-    def get_cached_delegation_token
-      begin
-        if @d_token.nil?
-          @d_token = delegation_token(@username)
-          @latest_time = Time.now
-        elsif is_update_time
-          renew_delegation_token(@d_token)
-          @latest_time = Time.now
-        end
-      rescue => e
-        raise WebHDFS::RequestFailedError, e.message
+
+    def get_cached_kerberos_delegation_token
+      return @kerberos_delegation_token if !@kerberos_delegation_token.nil? && !should_kerberos_token_updated?
+
+      if !@kerberos_delegation_token
+        @kerberos_delegation_token = get_kerberos_delegation_token(@username)
+      else
+        renew_kerberos_delegation_token(@kerberos_delegation_token)
       end
-
-      @d_token
+      @kerberos_token_updated_at = Time.now
+      @kerberos_delegation_token
+    rescue => e
+      raise WebHDFS::RequestFailedError, e.message
     end
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATE
@@ -98,7 +94,7 @@ module WebHDFS
       if @httpfs_mode
         options = options.merge({'data' => 'true'})
       end
-      unless @renew_delegation_token_time_hr.nil?
+      if @renew_kerberos_delegation_token_time_hour
         options = options.merge('delegation' => get_cached_delegation_token)
       end
       check_options(options, OPT_TABLE['CREATE'])
@@ -113,7 +109,7 @@ module WebHDFS
       if @httpfs_mode
         options = options.merge({'data' => 'true'})
       end
-      unless @renew_delegation_token_time_hr.nil?
+      if @renew_kerberos_delegation_token_time_hour
         options = options.merge('delegation' => get_cached_delegation_token)
       end
       check_options(options, OPT_TABLE['APPEND'])
@@ -256,7 +252,7 @@ module WebHDFS
     alias :settimes :touch
 
     # curl -i "http://<HOST>:<PORT>/webhdfs/v1/?op=GETDELEGATIONTOKEN&renewer=<USER>"
-    def delegation_token(user, options={})
+    def get_kerberos_delegation_token(user, options={})
       options = options.merge({ 'renewer' => user })
       check_options(options, OPT_TABLE['GETDELEGATIONTOKEN'])
       res = operate_requests('GET', '/', 'GETDELEGATIONTOKEN', options)
@@ -266,7 +262,7 @@ module WebHDFS
     OPT_TABLE['GETDELEGATIONTOKEN'] = ['renewer']
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/?op=RENEWDELEGATIONTOKEN&token=<DELEGATION_TOKEN>"
-    def renew_delegation_token(token, options={})
+    def renew_kerberos_delegation_token(token, options={})
       options = options.merge({ 'token' => token })
       check_options(options, OPT_TABLE['RENEWDELEGATIONTOKEN'])
       res = operate_requests('PUT', '/', 'RENEWDELEGATIONTOKEN', options)
@@ -408,6 +404,7 @@ module WebHDFS
         end
       end
 
+      # if delegation token param settled, namenode do not response WWW-Authenticate header
       if @kerberos and res.code == '307' and not params.key?('delegation')
         itok = (res.header.get_fields('WWW-Authenticate') || ['']).pop.split(/\s+/).last
         unless itok
@@ -434,21 +431,15 @@ module WebHDFS
                   end
 
         # when delegation token is expired
-        unless @renew_delegation_token_time_hr.nil? and res.code == '403'
-          detail = nil
-          if message =~ /^\{"RemoteException":\{/
-            begin
-              detail = JSON.parse(message)
-            rescue
-              # ignore broken json response body
+        if res.code == '403' and @renew_kerberos_delegation_token_time_hour
+          if message.include?('{"RemoteException":{')
+            detail = JSON.parse(message) rescue nil
+            if detail.dig('RemoteException', 'exception') == 'InvalidToken' and detail.dig('RemoteException', 'message').include?('HDFS_DELEGATION_TOKEN')
+              @kerberos_delegation_token = get_kerberos_delegation_token(@username)
+              params = params.merge('token' => @kerberos_delegation_token)
+              sleep @retry_interval if @retry_interval > 0
+              return request(host, port, method, path, op, params, payload, header, retries+1)
             end
-          end
-
-          if detail and (detail['RemoteException']['exception'] == 'InvalidToken') and (detail['RemoteException']['message'].include? "HDFS_DELEGATION_TOKEN")
-            @d_token = delegation_token(@username)
-            params = params.merge('token' => @d_token)
-            sleep @retry_interval if @retry_interval > 0
-            return request(host, port, method, path, op, params, payload, header, retries+1)
           end
         end
 
