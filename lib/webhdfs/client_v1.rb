@@ -434,7 +434,7 @@ module WebHDFS
         if res.code == '403' and @renew_kerberos_delegation_token_time_hour
           if message.include?('{"RemoteException":{')
             detail = JSON.parse(message) rescue nil
-            if detail&.dig('RemoteException', 'exception') == 'InvalidToken' and detail&.dig('RemoteException', 'message').include?('HDFS_DELEGATION_TOKEN')
+            if detail&.dig('RemoteException', 'exception') == 'InvalidToken' and detail&.dig('RemoteException', 'message')&.include?('HDFS_DELEGATION_TOKEN')
               params = params.merge('token' => get_cached_kerberos_delegation_token(true))
               sleep @retry_interval if @retry_interval > 0
               return request(host, port, method, path, op, params, payload, header, retries+1)
