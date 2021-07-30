@@ -76,8 +76,10 @@ module WebHDFS
 
       if !@kerberos_delegation_token || force_renew
         @kerberos_delegation_token = get_kerberos_delegation_token(@username)
+        @kerberos_token_updated_at = Time.now
       else
         renew_kerberos_delegation_token(@kerberos_delegation_token)
+        @kerberos_token_updated_at = Time.now
       end
       @kerberos_delegation_token
     rescue => e
@@ -255,7 +257,6 @@ module WebHDFS
       check_options(options, OPT_TABLE['GETDELEGATIONTOKEN'])
       res = operate_requests('GET', '/', 'GETDELEGATIONTOKEN', options)
       check_success_json(res, 'Token')
-      @kerberos_token_updated_at = Time.now
       JSON.parse(res.body)['Token']['urlString']
     end
     OPT_TABLE['GETDELEGATIONTOKEN'] = ['renewer']
@@ -266,7 +267,6 @@ module WebHDFS
       check_options(options, OPT_TABLE['RENEWDELEGATIONTOKEN'])
       res = operate_requests('PUT', '/', 'RENEWDELEGATIONTOKEN', options)
       check_success_json(res, 'long')
-      @kerberos_token_updated_at = Time.now
     end
     OPT_TABLE['RENEWDELEGATIONTOKEN'] = ['token']
 
