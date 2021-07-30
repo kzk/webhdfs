@@ -73,7 +73,7 @@ module WebHDFS
 
 
     def get_cached_kerberos_delegation_token
-      return @kerberos_delegation_token if !@kerberos_delegation_token.nil? && !should_kerberos_token_updated?
+      return @kerberos_delegation_token if @kerberos_delegation_token && !should_kerberos_token_updated?
 
       if !@kerberos_delegation_token
         @kerberos_delegation_token = get_kerberos_delegation_token(@username)
@@ -88,14 +88,14 @@ module WebHDFS
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATE
     #                 [&overwrite=<true|false>][&blocksize=<LONG>][&replication=<SHORT>]
-    #                 [&permission=<OCTAL>][&buffersize=<INT>]"
+    #                 [&permission=<OCTAL>][&buffersize=<INT>]
     #                 [&delegation=<DELEGATION_TOKEN>]"
     def create(path, body, options={})
       if @httpfs_mode
         options = options.merge({'data' => 'true'})
       end
       if @renew_kerberos_delegation_token_time_hour
-        options = options.merge('delegation' => get_cached_delegation_token)
+        options = options.merge('delegation' => get_cached_kerberos_delegation_token)
       end
       check_options(options, OPT_TABLE['CREATE'])
       res = operate_requests('PUT', path, 'CREATE', options, body)
@@ -110,7 +110,7 @@ module WebHDFS
         options = options.merge({'data' => 'true'})
       end
       if @renew_kerberos_delegation_token_time_hour
-        options = options.merge('delegation' => get_cached_delegation_token)
+        options = options.merge('delegation' => get_cached_kerberos_delegation_token)
       end
       check_options(options, OPT_TABLE['APPEND'])
       res = operate_requests('POST', path, 'APPEND', options, body)
@@ -434,7 +434,7 @@ module WebHDFS
         if res.code == '403' and @renew_kerberos_delegation_token_time_hour
           if message.include?('{"RemoteException":{')
             detail = JSON.parse(message) rescue nil
-            if detail.dig('RemoteException', 'exception') == 'InvalidToken' and detail.dig('RemoteException', 'message').include?('HDFS_DELEGATION_TOKEN')
+            if detail&.dig('RemoteException', 'exception') == 'InvalidToken' and detail&.dig('RemoteException', 'message').include?('HDFS_DELEGATION_TOKEN')
               @kerberos_delegation_token = get_kerberos_delegation_token(@username)
               params = params.merge('token' => @kerberos_delegation_token)
               sleep @retry_interval if @retry_interval > 0
