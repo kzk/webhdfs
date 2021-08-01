@@ -102,6 +102,9 @@ Note that net/https and openssl libraries must be available:
 Note that [gssapi](https://github.com/zenchild/gssapi) library must be available:
 
     client = WebHDFS::Client.new('hostname', 14000)
+    # or if want to using client delegation token with renew by 8 hours
+    client = WebHDFS::Client.new('hostname', 14000, username, nil, nil, nil, {}, 8)
+
     client.kerberos = true
     client.kerberos_keytab = "/path/to/project.keytab"
 
