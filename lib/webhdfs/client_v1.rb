@@ -82,8 +82,6 @@ module WebHDFS
         @kerberos_token_updated_at = Time.now
       end
       @kerberos_delegation_token
-    rescue => e
-      raise WebHDFS::RequestFailedError, e.message
     end
 
     # curl -i -X PUT "http://<HOST>:<PORT>/webhdfs/v1/<PATH>?op=CREATE
