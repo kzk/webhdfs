@@ -428,11 +428,11 @@ module WebHDFS
                     'Response body is empty...'
                   end
 
-        # when delegation token is expired
-        if res.code == '403' and @renew_kerberos_delegation_token_time_hour
+        # when delegation token is invalid
+        if res.code == '403' and @renew_kerberos_delegation_token_time_hour && retries < @retry_times
           if message.include?('{"RemoteException":{')
             detail = JSON.parse(message) rescue nil
-            if detail&.dig('RemoteException', 'exception') == 'InvalidToken' and detail&.dig('RemoteException', 'message')&.include?('HDFS_DELEGATION_TOKEN')
+            if detail&.dig('RemoteException', 'message')&.include?('HDFS_DELEGATION_TOKEN')
               params = params.merge('token' => get_cached_kerberos_delegation_token(true))
               sleep @retry_interval if @retry_interval > 0
               return request(host, port, method, path, op, params, payload, header, retries+1)
