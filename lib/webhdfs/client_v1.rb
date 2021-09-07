@@ -2,7 +2,7 @@ require 'net/http'
 require 'uri'
 require 'json'
 require 'addressable/uri'
-
+require "base64"
 require_relative 'exceptions'
 
 module WebHDFS
