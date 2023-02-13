@@ -6,6 +6,22 @@ class FileUtilsTest < Test::Unit::TestCase
     require 'lib/webhdfs/fileutils'
   end
 
+  def test_kerberos_authentication
+    enable_kerberos_auth = true
+
+    if enable_kerberos_auth
+      expected_output = "Kerberos authentication is enabled"
+    else
+      expected_output = "Kerberos authentication is disabled"
+    end
+
+    output = capture_stdout do
+      WebHDFS::FileUtils.enable_kerberos_auth = enable_kerberos_auth
+    end
+
+    assert_equal expected_output, output.strip
+  end
+
   def test_copy_from_local
     WebHDFS::FileUtils.copy_from_local('VERSION', 'VERSION', :verbose => true)
     WebHDFS::FileUtils.copy_to_local('VERSION', 'VERSION2', :verbose => true)
@@ -41,10 +57,10 @@ class FileUtilsTest < Test::Unit::TestCase
     WebHDFS::FileUtils.rm('foo', :verbose => true)
   end
 
-  def test_chown
-    #WebHDFS::FileUtils.mkdir('foo', :mode => 0777, :verbose => true)
-    #WebHDFS::FileUtils.chown('webuser', 'supergroup', 'foo', :verbose => true)
-    #WebHDFS::FileUtils.rm('foo', :verbose => true)
+def test_chown
+    WebHDFS::FileUtils.mkdir('foo', :mode => 0777, :verbose => true)
+    WebHDFS::FileUtils.chown('webuser', 'supergroup', 'foo', :verbose => true)
+    WebHDFS::FileUtils.rm('foo', :verbose => true)
   end
 
   def test_set_repl_factor
@@ -54,14 +70,14 @@ class FileUtilsTest < Test::Unit::TestCase
   end
 
   def test_set_atime
-    #WebHDFS::FileUtils.mkdir('foo', :mode => 0777, :verbose => true)
-    #WebHDFS::FileUtils.set_atime('foo', Time.now)
-    #WebHDFS::FileUtils.rm('foo', :verbose => true)
+    WebHDFS::FileUtils.mkdir('foo', :mode => 0777, :verbose => true)
+    WebHDFS::FileUtils.set_atime('foo', Time.now)
+    WebHDFS::FileUtils.rm('foo', :verbose => true)
   end
 
   def test_set_mtime
-    #WebHDFS::FileUtils.mkdir('foo', :mode => 0777, :verbose => true)
-    #WebHDFS::FileUtils.set_mtime('foo', Time.now)
-    #WebHDFS::FileUtils.rm('foo', :verbose => true)
+    WebHDFS::FileUtils.mkdir('foo', :mode => 0777, :verbose => true)
+    WebHDFS::FileUtils.set_mtime('foo', Time.now)
+    WebHDFS::FileUtils.rm('foo', :verbose => true)
   end
 end
