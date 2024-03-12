@@ -38,7 +38,7 @@ module WebHDFS
       @ssl_verify_mode = mode
     end
 
-    def initialize(host='localhost', port=50070, username=nil, doas=nil, proxy_address=nil, proxy_port=nil, http_headers={}, renew_kerberos_delegation_token_time_hour=nil)
+    def initialize(host='localhost', port=50070, username=nil, doas=nil, proxy_address=nil, proxy_port=nil, http_headers={}, renew_kerberos_delegation_token_time_hour=nil,kerberos_delegation_token_max_lifetime_hour=nil)
       @host = host
       @port = port
       @username = username
@@ -61,21 +61,27 @@ module WebHDFS
       @kerberos = false
       @kerberos_keytab = nil
       @renew_kerberos_delegation_token_time_hour = renew_kerberos_delegation_token_time_hour
+      @kerberos_delegation_token_max_lifetime_hour = kerberos_delegation_token_max_lifetime_hour
       @kerberos_delegation_token = nil
+      @kerberos_token_created_at = Time.now
       @kerberos_token_updated_at = Time.now
       @http_headers = http_headers
     end
 
     def should_kerberos_token_updated?
-      @kerberos_token_updated_at + (@renew_kerberos_delegation_token_time_hour * 60 * 60) <= Time.now
+      (@kerberos_token_updated_at + (@renew_kerberos_delegation_token_time_hour * 60 * 60) <= Time.now) || is_delegation_token_lifetime_expired?
     end
 
+    def is_delegation_token_lifetime_expired?
+      (@kerberos_token_created_at + (@kerberos_delegation_token_max_lifetime_hour * 60 * 60 ) <= Time.now)
+    end
 
     def get_cached_kerberos_delegation_token(force_renew=nil)
       return @kerberos_delegation_token if @kerberos_delegation_token && !should_kerberos_token_updated? && !force_renew
 
-      if !@kerberos_delegation_token || force_renew
+      if !@kerberos_delegation_token || force_renew || is_delegation_token_lifetime_expired?
         @kerberos_delegation_token = get_kerberos_delegation_token(@username)
+        @kerberos_token_created_at = Time.now
         @kerberos_token_updated_at = Time.now
       else
         renew_kerberos_delegation_token(@kerberos_delegation_token)
